@@ -1,0 +1,43 @@
+[project]
+name = "virtomate"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "Andreas Ahlenstorf", email = "andreas@ahlenstorf.ch" }
+]
+dependencies = [
+    "libvirt-python==9.0.0",
+]
+readme = "README.md"
+requires-python = ">= 3.10"
+
+[project.scripts]
+"virtomate" = "virtomate:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = [
+    "pytest==8.2.0",
+    "mypy==1.10.0",
+    "tenacity==8.3.0",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/virtomate"]
+
+[[tool.mypy.overrides]]
+module = [
+    "libvirt",
+    "libvirt_qemu",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers"
