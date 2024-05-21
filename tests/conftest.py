@@ -1,11 +1,33 @@
-from typing import Generator
+from typing import Generator, List
 
 import libvirt
 import pytest
 
 from tests.resources import resource_content
 
-AutomaticCleanupRoutine = Generator[None, None, None]
+AutomaticCleanup = Generator[None, None, None]
+
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    parser.addoption(
+        "--functional", action="store_true", default=False, help="run functional tests"
+    )
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    config.addinivalue_line("markers", "functional: mark test as functional test")
+
+
+def pytest_collection_modifyitems(
+    config: pytest.Config, items: List[pytest.Item]
+) -> None:
+    if config.getoption("--functional"):
+        return
+
+    skip_functional = pytest.mark.skip(reason="needs --functional to run")
+    for item in items:
+        if "functional" in item.keywords:
+            item.add_marker(skip_functional)
 
 
 @pytest.fixture
@@ -79,7 +101,7 @@ def simple_uefi_machine() -> str:
 
 
 @pytest.fixture
-def automatic_cleanup() -> AutomaticCleanupRoutine:
+def automatic_cleanup() -> AutomaticCleanup:
     """Pytest fixture that removes all QEMU virtual machines and disks from the pools `default` and `nvram` prefixed
     with `virtomate` after a test has completed.
     """
