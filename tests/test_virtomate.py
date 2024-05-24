@@ -34,6 +34,34 @@ def wait_for_network(domain: str) -> None:
     assert len(json.loads(result.stdout)) > 0
 
 
+def test_domain_list(
+    simple_bios_machine: str, simple_uefi_machine: str, automatic_cleanup: None
+) -> None:
+    cmd = ["virtomate", "domain-list"]
+    result = subprocess.run(cmd, capture_output=True)
+    assert result.returncode == 0, "domain-list failed unexpectedly"
+    assert result.stderr == b""
+
+    domains = json.loads(result.stdout)
+
+    # There might be pre-existing domains.
+    assert len(domains) >= 2
+
+    machine = next(d for d in domains if d["name"] == simple_bios_machine)
+    assert machine == {
+        "uuid": "d2ecf360-24a6-4952-95fb-68b99307d942",
+        "name": simple_bios_machine,
+        "state": "shut-off",
+    }
+
+    machine = next(d for d in domains if d["name"] == simple_uefi_machine)
+    assert machine == {
+        "uuid": "6fc06a10-3c15-4fd5-bc16-495e11e1083a",
+        "name": simple_uefi_machine,
+        "state": "shut-off",
+    }
+
+
 def test_guest_ping(simple_bios_machine: str, automatic_cleanup: None) -> None:
     cmd = ["virtomate", "guest-ping", "does-not-exist"]
     result = subprocess.run(cmd, capture_output=True)

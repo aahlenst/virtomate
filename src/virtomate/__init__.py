@@ -166,6 +166,13 @@ class Hypervisor:
             self._conn.close()
 
 
+def list_domains(args: argparse.Namespace) -> int:
+    with Hypervisor("qemu:///system") as hypervisor:
+        result = hypervisor.list_domains()
+        print(json.dumps(result))
+        return 0
+
+
 def list_interfaces(args: argparse.Namespace) -> int:
     match args.source:
         case "lease":
@@ -193,15 +200,19 @@ def ping_guest(args: argparse.Namespace) -> int:
 
 
 def main() -> Any:
-    parser = argparse.ArgumentParser(description="Automate libvirt.")
-    subparsers = parser.add_subparsers(title="Subcommands")
+    p = argparse.ArgumentParser(description="Automate libvirt.")
+    sp = p.add_subparsers(title="Subcommands")
+
+    # domain-list
+    p_domain_list = sp.add_parser("domain-list", help="List all domains")
+    p_domain_list.set_defaults(func=list_domains)
 
     # domifaddr
-    parser_domifaddr = subparsers.add_parser(
+    p_domifaddr = sp.add_parser(
         "domifaddr", help="List network interfaces of a running domain"
     )
-    parser_domifaddr.add_argument("domain", type=str, help="Name of the domain")
-    parser_domifaddr.add_argument(
+    p_domifaddr.add_argument("domain", type=str, help="Name of the domain")
+    p_domifaddr.add_argument(
         "--source",
         choices=(
             "lease",
@@ -211,18 +222,16 @@ def main() -> Any:
         default="lease",
         help="Source of the addresses (default: %(default)s)",
     )
-    parser_domifaddr.set_defaults(func=list_interfaces)
+    p_domifaddr.set_defaults(func=list_interfaces)
 
     # guest-ping
-    parser_guest_ping = subparsers.add_parser(
-        "guest-ping", help="Ping the QEMU Guest Agent"
-    )
-    parser_guest_ping.add_argument(
+    p_guest_ping = sp.add_parser("guest-ping", help="Ping the QEMU Guest Agent")
+    p_guest_ping.add_argument(
         "domain",
         type=str,
         help="Name of the domain to ping",
     )
-    parser_guest_ping.set_defaults(func=ping_guest)
+    p_guest_ping.set_defaults(func=ping_guest)
 
-    args = parser.parse_args()
+    args = p.parse_args()
     return args.func(args)
