@@ -1,14 +1,24 @@
 #!/usr/bin/env python3
+import argparse
 import json
 import logging
 from enum import Enum
-from typing import Dict, Sequence
+from typing import Dict, Sequence, Any
 
 import libvirt
 import libvirt_qemu
 from libvirt import virConnect
 
 logger = logging.getLogger(__name__)
+
+
+def libvirt_error_handler(ctx, error):  # type: ignore
+    # TODO: Make it useful. Problem: Duplicates (?) contents of libvirt.libvirtError which would not be useful.
+    #  https://libvirt.gitlab.io/libvirt-appdev-guide-python/libvirt_application_development_guide_using_python-Error_Handling-Registering_Error_Handler.html
+    logger.debug("libvirt error %s", error)
+
+
+libvirt.registerErrorHandler(f=libvirt_error_handler, ctx=None)
 
 MachineList = Sequence[Dict[str, str]]
 AddressList = Sequence[Dict[str, str]]
@@ -79,6 +89,7 @@ class Hypervisor:
     def list_domain_interfaces(
         self, domain_name: str, source: AddressSource
     ) -> AddressList:
+        """List all network interfaces of a domain."""
         domain = self._conn.lookupByName(domain_name)
 
         match source:
@@ -138,9 +149,63 @@ class Hypervisor:
             return False
 
 
-def main() -> int:
+def list_interfaces(args: argparse.Namespace) -> int:
+    match args.source:
+        case "lease":
+            source = AddressSource.LEASE
+        case "agent":
+            source = AddressSource.AGENT
+        case "arp":
+            source = AddressSource.ARP
+        case _:
+            # Argument choices not matching all AddressSource is a programming error.
+            raise AssertionError("Unknown address source: {}".format(args.source))
+
     hypervisor = Hypervisor("qemu:///system")
-    if hypervisor.ping_guest("virtomate-simple-bios"):
+    result = hypervisor.list_domain_interfaces(args.domain, source)
+    print(json.dumps(result))
+    return 0
+
+
+def ping_guest(args: argparse.Namespace) -> int:
+    hypervisor = Hypervisor("qemu:///system")
+    if hypervisor.ping_guest(args.domain):
         return 0
     else:
         return 1
+
+
+def main() -> Any:
+    parser = argparse.ArgumentParser(description="Automate libvirt.")
+    subparsers = parser.add_subparsers(title="Subcommands")
+
+    # domifaddr
+    parser_domifaddr = subparsers.add_parser(
+        "domifaddr", help="List network interfaces of a running domain"
+    )
+    parser_domifaddr.add_argument("domain", type=str, help="Name of the domain")
+    parser_domifaddr.add_argument(
+        "--source",
+        choices=(
+            "lease",
+            "agent",
+            "arp",
+        ),
+        default="lease",
+        help="Source of the addresses (default: %(default)s)",
+    )
+    parser_domifaddr.set_defaults(func=list_interfaces)
+
+    # guest-ping
+    parser_guest_ping = subparsers.add_parser(
+        "guest-ping", help="Ping the QEMU Guest Agent"
+    )
+    parser_guest_ping.add_argument(
+        "domain",
+        type=str,
+        help="Name of the domain to ping",
+    )
+    parser_guest_ping.set_defaults(func=ping_guest)
+
+    args = parser.parse_args()
+    return args.func(args)
