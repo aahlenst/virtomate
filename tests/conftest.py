@@ -5,8 +5,6 @@ import pytest
 
 from tests.resources import resource_content
 
-AutomaticCleanup = Generator[None, None, None]
-
 
 def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
@@ -101,7 +99,7 @@ def simple_uefi_machine() -> str:
 
 
 @pytest.fixture
-def automatic_cleanup() -> AutomaticCleanup:
+def automatic_cleanup() -> Generator[None, None, None]:
     """Pytest fixture that removes all QEMU virtual machines and disks from the pools `default` and `nvram` prefixed
     with `virtomate` after a test has completed.
     """

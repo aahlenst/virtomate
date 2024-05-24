@@ -3,6 +3,7 @@ import argparse
 import json
 import logging
 from enum import Enum
+from types import TracebackType
 from typing import Dict, Sequence, Any
 
 import libvirt
@@ -58,6 +59,18 @@ class Hypervisor:
 
     def __init__(self, url: str):
         self._conn = libvirt.open(url)
+
+    def __enter__(self) -> "Hypervisor":
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        if self._conn is not None:
+            self._conn.close()
 
     def connection(self) -> virConnect:
         """
@@ -148,6 +161,10 @@ class Hypervisor:
         except libvirt.libvirtError:
             return False
 
+    def close(self) -> None:
+        if self._conn is not None:
+            self._conn.close()
+
 
 def list_interfaces(args: argparse.Namespace) -> int:
     match args.source:
@@ -161,18 +178,18 @@ def list_interfaces(args: argparse.Namespace) -> int:
             # Argument choices not matching all AddressSource is a programming error.
             raise AssertionError("Unknown address source: {}".format(args.source))
 
-    hypervisor = Hypervisor("qemu:///system")
-    result = hypervisor.list_domain_interfaces(args.domain, source)
-    print(json.dumps(result))
-    return 0
+    with Hypervisor("qemu:///system") as hypervisor:
+        result = hypervisor.list_domain_interfaces(args.domain, source)
+        print(json.dumps(result))
+        return 0
 
 
 def ping_guest(args: argparse.Namespace) -> int:
-    hypervisor = Hypervisor("qemu:///system")
-    if hypervisor.ping_guest(args.domain):
-        return 0
-    else:
-        return 1
+    with Hypervisor("qemu:///system") as hypervisor:
+        if hypervisor.ping_guest(args.domain):
+            return 0
+        else:
+            return 1
 
 
 def main() -> Any:

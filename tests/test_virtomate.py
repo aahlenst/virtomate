@@ -5,7 +5,6 @@ import subprocess
 import pytest
 from tenacity import stop_after_attempt, wait_fixed, retry
 
-from tests.conftest import AutomaticCleanup
 from tests.matchers import ANY_STR, ANY_INT
 
 logger = logging.getLogger(__name__)
@@ -35,9 +34,7 @@ def wait_for_network(domain: str) -> None:
     assert len(json.loads(result.stdout)) > 0
 
 
-def test_guest_ping(
-    simple_bios_machine: str, automatic_cleanup: AutomaticCleanup
-) -> None:
+def test_guest_ping(simple_bios_machine: str, automatic_cleanup: None) -> None:
     cmd = ["virtomate", "guest-ping", "does-not-exist"]
     result = subprocess.run(cmd, capture_output=True)
     assert result.returncode == 1, "guest-ping succeeded unexpectedly"
@@ -64,9 +61,7 @@ def test_guest_ping(
     assert result.stderr == b""
 
 
-def test_domifaddr(
-    simple_bios_machine: str, automatic_cleanup: AutomaticCleanup
-) -> None:
+def test_domifaddr(simple_bios_machine: str, automatic_cleanup: None) -> None:
     cmd = ["virtomate", "domifaddr", simple_bios_machine]
     result = subprocess.run(cmd, capture_output=True)
     assert result.returncode == 1, "domifaddr succeeded unexpectedly"

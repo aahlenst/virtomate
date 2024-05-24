@@ -1,3 +1,5 @@
+from typing import Generator
+
 import libvirt
 import pytest
 
@@ -5,8 +7,13 @@ from tests.resources import resource_content
 from virtomate import Hypervisor, AddressSource
 
 
-def test_list_domains() -> None:
-    hypervisor = Hypervisor("test:///default")
+@pytest.fixture
+def hypervisor() -> Generator[Hypervisor, None, None]:
+    with Hypervisor("test:///default") as hypervisor:
+        yield hypervisor
+
+
+def test_list_domains(hypervisor: Hypervisor) -> None:
     conn = hypervisor.connection()
 
     assert hypervisor.list_domains() == [
@@ -57,9 +64,7 @@ def test_list_domains() -> None:
     ]
 
 
-def test_list_domain_interfaces() -> None:
-    hypervisor = Hypervisor("test:///default")
-
+def test_list_domain_interfaces(hypervisor: Hypervisor) -> None:
     with pytest.raises(libvirt.libvirtError, match="Domain not found"):
         hypervisor.list_domain_interfaces("unknown", AddressSource.AGENT)
 
