@@ -15,7 +15,13 @@ if "LIBVIRT_DEFAULT_URI" not in os.environ:
     )
     os.environ["LIBVIRT_DEFAULT_URI"] = "qemu:///system"
 
-pytestmark = pytest.mark.functional
+pytestmark = [
+    pytest.mark.functional,
+    pytest.mark.skipif(
+        os.environ["LIBVIRT_DEFAULT_URI"].startswith("test://"),
+        reason="libvirt test driver is not supported",
+    ),
+]
 
 
 @retry(stop=stop_after_attempt(30), wait=wait_fixed(1))
@@ -32,6 +38,44 @@ def wait_for_network(domain: str) -> None:
     args = ["virtomate", "domain-iface-list", "--source", "arp", domain]
     result = subprocess.run(args, check=True, capture_output=True)
     assert len(json.loads(result.stdout)) > 0
+
+
+def test_connection_option(simple_bios_machine: str, automatic_cleanup: None) -> None:
+    cmd = ["virtomate", "domain-list"]
+    result = subprocess.run(cmd, capture_output=True)
+    assert result.returncode == 0, "domain-list failed unexpectedly"
+    assert result.stderr == b""
+
+    domains = json.loads(result.stdout)
+
+    machine = next(d for d in domains if d["name"] == simple_bios_machine)
+    assert machine == {
+        "uuid": "d2ecf360-24a6-4952-95fb-68b99307d942",
+        "name": simple_bios_machine,
+        "state": "shut-off",
+    }
+
+    # Test short form
+    cmd = ["virtomate", "-c", "test:///default", "domain-list"]
+    result = subprocess.run(cmd, capture_output=True)
+    assert result.returncode == 0, "domain-list failed unexpectedly"
+    assert result.stderr == b""
+
+    domains = json.loads(result.stdout)
+
+    with pytest.raises(StopIteration):
+        next(d for d in domains if d["name"] == simple_bios_machine)
+
+    # Test long form
+    cmd = ["virtomate", "--connection", "test:///default", "domain-list"]
+    result = subprocess.run(cmd, capture_output=True)
+    assert result.returncode == 0, "domain-list failed unexpectedly"
+    assert result.stderr == b""
+
+    domains = json.loads(result.stdout)
+
+    with pytest.raises(StopIteration):
+        next(d for d in domains if d["name"] == simple_bios_machine)
 
 
 def test_domain_list(

@@ -57,7 +57,7 @@ class CloneMode(Enum):
 class Hypervisor:
     _conn: virConnect
 
-    def __init__(self, url: str):
+    def __init__(self, url: str | None = None):
         self._conn = libvirt.open(url)
 
     def __enter__(self) -> "Hypervisor":
@@ -167,7 +167,7 @@ class Hypervisor:
 
 
 def list_domains(args: argparse.Namespace) -> int:
-    with Hypervisor("qemu:///system") as hypervisor:
+    with Hypervisor(args.connection) as hypervisor:
         result = hypervisor.list_domains()
         print(json.dumps(result))
         return 0
@@ -185,14 +185,14 @@ def list_domain_interfaces(args: argparse.Namespace) -> int:
             # Argument choices not matching all AddressSource is a programming error.
             raise AssertionError("Unknown address source: {}".format(args.source))
 
-    with Hypervisor("qemu:///system") as hypervisor:
+    with Hypervisor(args.connection) as hypervisor:
         result = hypervisor.list_domain_interfaces(args.domain, source)
         print(json.dumps(result))
         return 0
 
 
 def ping_guest(args: argparse.Namespace) -> int:
-    with Hypervisor("qemu:///system") as hypervisor:
+    with Hypervisor(args.connection) as hypervisor:
         if hypervisor.ping_guest(args.domain):
             return 0
         else:
@@ -201,6 +201,7 @@ def ping_guest(args: argparse.Namespace) -> int:
 
 def main() -> int:
     p = argparse.ArgumentParser(description="Automate libvirt.")
+    p.add_argument("-c", "--connection", help="libvirt connection URI", default=None)
     sp = p.add_subparsers(title="Subcommands")
 
     # domain-list
