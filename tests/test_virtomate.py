@@ -29,7 +29,7 @@ def wait_until_running(domain: str) -> None:
 def wait_for_network(domain: str) -> None:
     """Waits until the given domain is connected a network."""
     # Use ARP because this is the method that takes the longest for changes to become visible.
-    args = ["virtomate", "domifaddr", "--source", "arp", domain]
+    args = ["virtomate", "domain-iface-list", "--source", "arp", domain]
     result = subprocess.run(args, check=True, capture_output=True)
     assert len(json.loads(result.stdout)) > 0
 
@@ -89,10 +89,10 @@ def test_guest_ping(simple_bios_machine: str, automatic_cleanup: None) -> None:
     assert result.stderr == b""
 
 
-def test_domifaddr(simple_bios_machine: str, automatic_cleanup: None) -> None:
-    cmd = ["virtomate", "domifaddr", simple_bios_machine]
+def test_domain_iface_list(simple_bios_machine: str, automatic_cleanup: None) -> None:
+    cmd = ["virtomate", "domain-iface-list", simple_bios_machine]
     result = subprocess.run(cmd, capture_output=True)
-    assert result.returncode == 1, "domifaddr succeeded unexpectedly"
+    assert result.returncode == 1, "domain-iface-list succeeded unexpectedly"
     assert result.stdout == b""
     # TODO: Expect proper JSON error response
     assert result.stderr != b""
@@ -105,9 +105,9 @@ def test_domifaddr(simple_bios_machine: str, automatic_cleanup: None) -> None:
     wait_for_network(simple_bios_machine)
 
     # Default is lease (same as of `virsh domifaddr`)
-    cmd = ["virtomate", "domifaddr", simple_bios_machine]
+    cmd = ["virtomate", "domain-iface-list", simple_bios_machine]
     result = subprocess.run(cmd, capture_output=True)
-    assert result.returncode == 0, "domifaddr failed unexpectedly"
+    assert result.returncode == 0, "domain-iface-list failed unexpectedly"
     assert result.stderr == b""
 
     # As of libvirt 10.1, there can be multiple leases per hardware address if the same machine has been defined and
@@ -122,9 +122,9 @@ def test_domifaddr(simple_bios_machine: str, automatic_cleanup: None) -> None:
     ]
 
     # Lease
-    cmd = ["virtomate", "domifaddr", "--source", "lease", simple_bios_machine]
+    cmd = ["virtomate", "domain-iface-list", "--source", "lease", simple_bios_machine]
     result = subprocess.run(cmd, capture_output=True)
-    assert result.returncode == 0, "domifaddr failed unexpectedly"
+    assert result.returncode == 0, "domain-iface-list failed unexpectedly"
     assert result.stderr == b""
 
     interfaces = json.loads(result.stdout)
@@ -137,9 +137,9 @@ def test_domifaddr(simple_bios_machine: str, automatic_cleanup: None) -> None:
     ]
 
     # Agent
-    cmd = ["virtomate", "domifaddr", "--source", "agent", simple_bios_machine]
+    cmd = ["virtomate", "domain-iface-list", "--source", "agent", simple_bios_machine]
     result = subprocess.run(cmd, capture_output=True)
-    assert result.returncode == 0, "domifaddr failed unexpectedly"
+    assert result.returncode == 0, "domain-iface-list failed unexpectedly"
     assert result.stderr == b""
 
     interfaces = json.loads(result.stdout)
@@ -163,9 +163,9 @@ def test_domifaddr(simple_bios_machine: str, automatic_cleanup: None) -> None:
     ]
 
     # ARP table
-    cmd = ["virtomate", "domifaddr", "--source", "arp", simple_bios_machine]
+    cmd = ["virtomate", "domain-iface-list", "--source", "arp", simple_bios_machine]
     result = subprocess.run(cmd, capture_output=True)
-    assert result.returncode == 0, "domifaddr failed unexpectedly"
+    assert result.returncode == 0, "domain-iface-list failed unexpectedly"
     assert result.stderr == b""
 
     interfaces = json.loads(result.stdout)

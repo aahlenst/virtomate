@@ -173,7 +173,7 @@ def list_domains(args: argparse.Namespace) -> int:
         return 0
 
 
-def list_interfaces(args: argparse.Namespace) -> int:
+def list_domain_interfaces(args: argparse.Namespace) -> int:
     match args.source:
         case "lease":
             source = AddressSource.LEASE
@@ -207,12 +207,12 @@ def main() -> int:
     p_domain_list = sp.add_parser("domain-list", help="List all domains")
     p_domain_list.set_defaults(func=list_domains)
 
-    # domifaddr
-    p_domifaddr = sp.add_parser(
-        "domifaddr", help="List network interfaces of a running domain"
+    # domain-iface-list
+    p_domain_iface_list = sp.add_parser(
+        "domain-iface-list", help="List network interfaces of a running domain"
     )
-    p_domifaddr.add_argument("domain", type=str, help="Name of the domain")
-    p_domifaddr.add_argument(
+    p_domain_iface_list.add_argument("domain", type=str, help="Name of the domain")
+    p_domain_iface_list.add_argument(
         "--source",
         choices=(
             "lease",
@@ -222,7 +222,7 @@ def main() -> int:
         default="lease",
         help="Source of the addresses (default: %(default)s)",
     )
-    p_domifaddr.set_defaults(func=list_interfaces)
+    p_domain_iface_list.set_defaults(func=list_domain_interfaces)
 
     # guest-ping
     p_guest_ping = sp.add_parser("guest-ping", help="Ping the QEMU Guest Agent")
