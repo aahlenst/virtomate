@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import importlib.metadata
 import json
 import logging
 from enum import Enum
@@ -201,6 +202,12 @@ def ping_guest(args: argparse.Namespace) -> int:
 
 def main() -> int:
     p = argparse.ArgumentParser(description="Automate libvirt.")
+    p.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version=importlib.metadata.version("virtomate"),
+    )
     p.add_argument("-c", "--connection", help="libvirt connection URI", default=None)
     sp = p.add_subparsers(title="Subcommands")
 

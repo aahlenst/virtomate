@@ -4,7 +4,7 @@ import os
 import subprocess
 import pytest
 from tenacity import stop_after_attempt, wait_fixed, retry
-
+import importlib.metadata
 from tests.matchers import ANY_STR, ANY_INT
 
 logger = logging.getLogger(__name__)
@@ -38,6 +38,22 @@ def wait_for_network(domain: str) -> None:
     args = ["virtomate", "domain-iface-list", "--source", "arp", domain]
     result = subprocess.run(args, check=True, capture_output=True)
     assert len(json.loads(result.stdout)) > 0
+
+
+def test_display_version(automatic_cleanup: None) -> None:
+    cmd = ["virtomate", "-v"]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0, "version failed unexpectedly"
+    assert result.stdout.strip() != ""
+    assert result.stdout.strip() == importlib.metadata.version("virtomate")
+    assert result.stderr == ""
+
+    cmd = ["virtomate", "--version"]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0, "version failed unexpectedly"
+    assert result.stdout.strip() != ""
+    assert result.stdout.strip() == importlib.metadata.version("virtomate")
+    assert result.stderr == ""
 
 
 def test_connection_option(simple_bios_machine: str, automatic_cleanup: None) -> None:
