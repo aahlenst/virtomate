@@ -4,7 +4,7 @@ import json
 import logging
 from enum import Enum
 from types import TracebackType
-from typing import Dict, Sequence, Any
+from typing import Dict, Sequence
 
 import libvirt
 import libvirt_qemu
@@ -199,7 +199,7 @@ def ping_guest(args: argparse.Namespace) -> int:
             return 1
 
 
-def main() -> Any:
+def main() -> int:
     p = argparse.ArgumentParser(description="Automate libvirt.")
     sp = p.add_subparsers(title="Subcommands")
 
@@ -234,4 +234,9 @@ def main() -> Any:
     p_guest_ping.set_defaults(func=ping_guest)
 
     args = p.parse_args()
-    return args.func(args)
+    status_code = args.func(args)
+
+    # Ensure that all functions return a status code. This also helps mypy to narrow the type from Any.
+    assert isinstance(status_code, int)
+
+    return status_code
