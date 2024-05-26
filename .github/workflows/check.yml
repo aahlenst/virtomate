@@ -1,0 +1,61 @@
+name: Build and test
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # Run once per week to ensure that the pipeline is okay.
+    - cron: "37 10 * * 0"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.10", "3.12" ]
+        libvirt-version: [ "9.0.0", "10.3.0" ]
+
+    steps:
+      - uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: "libvirt-daemon libvirt-clients libvirt-dev"
+          version: 1.0
+
+      - uses: actions/checkout@v4
+
+      - name: Set up Rye
+        uses: eifinger/setup-rye@v3
+
+      - name: Use Python ${{ matrix.python-version }}
+        run: |
+          rye pin ${{ matrix.python-version }}
+
+      - name: Use python-libvirt ${{ matrix.libvirt-version }}
+        run: |
+          rye add "libvirt-python==${{ matrix.libvirt-version }}"
+
+      - name: Install dependencies
+        run: |
+          rye sync --no-lock
+          source .venv/bin/activate
+
+      - name: Check formatting
+        run: |
+          rye fmt --check
+
+      - name: Check types
+        run: |
+          rye run mypy --strict .
+
+      - name: Run the linter
+        run: |
+          rye lint
+
+      - name: Run tests
+        run: |
+          rye test
