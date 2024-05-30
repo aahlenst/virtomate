@@ -52,13 +52,13 @@ def test_list_domains(hypervisor: Hypervisor) -> None:
 
     assert hypervisor.list_domains() == [
         {
-            "uuid": "6fc06a10-3c15-4fd5-bc16-495e11e1083a",
-            "name": "virtomate-simple-uefi",
+            "uuid": "d2ecf360-24a6-4952-95fb-68b99307d942",
+            "name": "virtomate-simple-bios",
             "state": "shut-off",
         },
         {
-            "uuid": "d2ecf360-24a6-4952-95fb-68b99307d942",
-            "name": "virtomate-simple-bios",
+            "uuid": "ef70b4c0-1773-44a3-9b95-f239ae97d9db",
+            "name": "virtomate-simple-uefi",
             "state": "shut-off",
         },
     ]
@@ -83,3 +83,29 @@ def test_list_domain_interfaces(hypervisor: Hypervisor) -> None:
 
     with pytest.raises(libvirt.libvirtError, match="domain is not running"):
         hypervisor.list_domain_interfaces("test", AddressSource.AGENT)
+
+
+def test_clone_domain(hypervisor: Hypervisor) -> None:
+    assert hypervisor.list_domains() == [
+        {
+            "uuid": "6695eb01-f6a4-8304-79aa-97f2502e193f",
+            "name": "test",
+            "state": "running",
+        }
+    ]
+
+    with pytest.raises(Exception):
+        hypervisor.clone_domain("test", "my-clone")
+
+    conn = hypervisor.connection()
+    domain_test = conn.lookupByName("test")
+    domain_test.shutdown()
+
+    with pytest.raises(Exception):
+        hypervisor.clone_domain("test", "test")
+
+    with pytest.raises(Exception):
+        hypervisor.clone_domain("does-not-exist", "my-clone")
+
+    # Unfortunately, it is impossible to test the happy path with the test driver because it neither persists disks nor
+    # does it implement all required libvirt functions.

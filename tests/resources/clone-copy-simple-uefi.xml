@@ -1,6 +1,6 @@
 <domain type='kvm'>
-  <name>virtomate-simple-uefi</name>
-  <uuid>ef70b4c0-1773-44a3-9b95-f239ae97d9db</uuid>
+  <name>virtomate-clone-copy</name>
+  <uuid>70d6b969-6a1f-47f8-ab69-38cc33d000ea</uuid>
   <metadata>
     <libosinfo:libosinfo xmlns:libosinfo="http://libosinfo.org/xmlns/libvirt/domain/1.0">
       <libosinfo:os id="http://debian.org/debian/12"/>
@@ -12,7 +12,7 @@
   <os firmware='efi'>
     <type arch='x86_64' machine='q35'>hvm</type>
     <loader readonly='yes' type='pflash'>/usr/share/edk2/ovmf/OVMF_CODE.fd</loader>
-    <nvram template='/usr/share/edk2/ovmf/OVMF_VARS.fd'>/var/lib/libvirt/qemu/nvram/virtomate-simple-uefi-efivars.fd</nvram>
+    <nvram template='/usr/share/edk2/ovmf/OVMF_VARS.fd'>/var/lib/libvirt/qemu/nvram/virtomate-clone-copy-virtomate-simple-uefi-efivars.fd</nvram>
     <boot dev='hd'/>
   </os>
   <features>
@@ -37,7 +37,7 @@
     <emulator>/usr/bin/qemu-system-x86_64</emulator>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
-      <source file='/var/lib/libvirt/images/virtomate-simple-uefi'/>
+      <source file='/var/lib/libvirt/images/virtomate-clone-copy-virtomate-simple-uefi'/>
       <target dev='vda' bus='virtio'/>
       <address type='pci' domain='0x0000' bus='0x04' slot='0x00' function='0x0'/>
     </disk>
@@ -122,7 +122,7 @@
       <address type='pci' domain='0x0000' bus='0x03' slot='0x00' function='0x0'/>
     </controller>
     <interface type='network'>
-      <mac address='52:54:00:2e:12:bd'/>
+      <mac address='52:54:00:6c:91:a2'/>
       <source network='default'/>
       <model type='virtio'/>
       <address type='pci' domain='0x0000' bus='0x01' slot='0x00' function='0x0'/>

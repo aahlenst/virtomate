@@ -1,6 +1,6 @@
 <domain type='kvm'>
-  <name>virtomate-simple-uefi</name>
-  <uuid>ef70b4c0-1773-44a3-9b95-f239ae97d9db</uuid>
+  <name>virtomate-clone-reflink</name>
+  <uuid>0496dcd3-4c1f-4508-a3f3-a0d2be788848</uuid>
   <metadata>
     <libosinfo:libosinfo xmlns:libosinfo="http://libosinfo.org/xmlns/libvirt/domain/1.0">
       <libosinfo:os id="http://debian.org/debian/12"/>
@@ -9,10 +9,8 @@
   <memory unit='KiB'>2097152</memory>
   <currentMemory unit='KiB'>2097152</currentMemory>
   <vcpu placement='static'>1</vcpu>
-  <os firmware='efi'>
+  <os>
     <type arch='x86_64' machine='q35'>hvm</type>
-    <loader readonly='yes' type='pflash'>/usr/share/edk2/ovmf/OVMF_CODE.fd</loader>
-    <nvram template='/usr/share/edk2/ovmf/OVMF_VARS.fd'>/var/lib/libvirt/qemu/nvram/virtomate-simple-uefi-efivars.fd</nvram>
     <boot dev='hd'/>
   </os>
   <features>
@@ -36,8 +34,8 @@
   <devices>
     <emulator>/usr/bin/qemu-system-x86_64</emulator>
     <disk type='file' device='disk'>
-      <driver name='qemu' type='qcow2'/>
-      <source file='/var/lib/libvirt/images/virtomate-simple-uefi'/>
+      <driver name='qemu' type='raw'/>
+      <source file='/var/lib/libvirt/images/virtomate-clone-reflink-virtomate-simple-bios-raw'/>
       <target dev='vda' bus='virtio'/>
       <address type='pci' domain='0x0000' bus='0x04' slot='0x00' function='0x0'/>
     </disk>
@@ -122,7 +120,7 @@
       <address type='pci' domain='0x0000' bus='0x03' slot='0x00' function='0x0'/>
     </controller>
     <interface type='network'>
-      <mac address='52:54:00:2e:12:bd'/>
+      <mac address='52:54:00:ce:35:01'/>
       <source network='default'/>
       <model type='virtio'/>
       <address type='pci' domain='0x0000' bus='0x01' slot='0x00' function='0x0'/>
@@ -151,6 +149,9 @@
     <graphics type='spice' autoport='yes'>
       <listen type='address'/>
       <image compression='off'/>
+    </graphics>
+    <graphics type='vnc' sharePolicy='allow-exclusive' autoport='yes'>
+      <listen type='address'/>
     </graphics>
     <sound model='ich9'>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x1b' function='0x0'/>

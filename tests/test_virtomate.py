@@ -2,6 +2,9 @@ import json
 import logging
 import os
 import subprocess
+from xml.etree import ElementTree
+from xml.etree.ElementTree import Element
+
 import pytest
 from tenacity import stop_after_attempt, wait_fixed, retry
 import importlib.metadata
@@ -38,6 +41,24 @@ def wait_for_network(domain: str) -> None:
     args = ["virtomate", "domain-iface-list", "--source", "arp", domain]
     result = subprocess.run(args, check=True, capture_output=True)
     assert len(json.loads(result.stdout)) > 0
+
+
+def domain_exists(name: str) -> bool:
+    cmd = ["virtomate", "domain-list"]
+    result = subprocess.run(cmd, check=True, capture_output=True)
+    domains = json.loads(result.stdout)
+
+    for domain in domains:
+        if domain["name"] == name:
+            return True
+
+    return False
+
+
+def read_volume_xml(pool: str, volume: str) -> Element:
+    cmd = ["virsh", "vol-dumpxml", "--pool", pool, volume]
+    result = subprocess.run(cmd, check=True, capture_output=True)
+    return ElementTree.fromstring(result.stdout)
 
 
 def test_display_version(automatic_cleanup: None) -> None:
@@ -116,7 +137,7 @@ def test_domain_list(
 
     machine = next(d for d in domains if d["name"] == simple_uefi_machine)
     assert machine == {
-        "uuid": "6fc06a10-3c15-4fd5-bc16-495e11e1083a",
+        "uuid": "ef70b4c0-1773-44a3-9b95-f239ae97d9db",
         "name": simple_uefi_machine,
         "state": "shut-off",
     }
@@ -236,3 +257,186 @@ def test_domain_iface_list(simple_bios_machine: str, automatic_cleanup: None) ->
             "addresses": [{"address": ANY_STR, "prefix": 0, "type": "IPv4"}],
         },
     ]
+
+
+def test_domain_clone_copy_simple_bios(
+    simple_bios_machine: str, automatic_cleanup: None
+) -> None:
+    clone_name = "virtomate-clone-copy"
+
+    cmd = ["virtomate", "domain-clone", simple_bios_machine, clone_name]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0, "domain-clone failed unexpectedly"
+    assert result.stdout == ""
+    assert result.stderr == ""
+
+    volume_el = read_volume_xml("default", "virtomate-clone-copy-virtomate-simple-bios")
+    format_el = volume_el.find("target/format")
+    assert format_el is not None
+    assert format_el.attrib["type"] == "qcow2"
+    assert volume_el.find("backingStore") is None
+
+    cmd = ["virsh", "start", clone_name]
+    result = subprocess.run(cmd, text=True)
+    assert result.returncode == 0, "Could not start {}".format(clone_name)
+
+    wait_until_running(clone_name)
+
+
+def test_domain_clone_linked_simple_bios(
+    simple_bios_machine: str, automatic_cleanup: None
+) -> None:
+    clone_name = "virtomate-clone-linked"
+
+    cmd = [
+        "virtomate",
+        "domain-clone",
+        "--mode",
+        "linked",
+        simple_bios_machine,
+        clone_name,
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0, "domain-clone failed unexpectedly"
+    assert result.stdout == ""
+    assert result.stderr == ""
+
+    volume_el = read_volume_xml(
+        "default", "virtomate-clone-linked-virtomate-simple-bios"
+    )
+    format_el = volume_el.find("target/format")
+    bs_path_el = volume_el.find("backingStore/path")
+    bs_format_el = volume_el.find("backingStore/format")
+
+    assert format_el is not None
+    assert format_el.attrib["type"] == "qcow2"
+    assert bs_path_el is not None
+    assert bs_path_el.text == "/var/lib/libvirt/images/virtomate-simple-bios"
+    assert bs_format_el is not None
+    assert bs_format_el.attrib["type"] == "qcow2"
+
+    cmd = ["virsh", "start", clone_name]
+    result = subprocess.run(cmd, text=True)
+    assert result.returncode == 0, "Could not start {}".format(clone_name)
+
+    wait_until_running(clone_name)
+
+
+def test_domain_clone_linked_simple_bios_raw(
+    simple_bios_raw_machine: str, automatic_cleanup: None
+) -> None:
+    clone_name = "virtomate-clone-linked"
+
+    cmd = [
+        "virtomate",
+        "domain-clone",
+        "--mode",
+        "linked",
+        simple_bios_raw_machine,
+        clone_name,
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0, "domain-clone failed unexpectedly"
+    assert result.stdout == ""
+    assert result.stderr == ""
+
+    volume_el = read_volume_xml(
+        "default", "virtomate-clone-linked-virtomate-simple-bios-raw"
+    )
+    format_el = volume_el.find("target/format")
+    bs_path_el = volume_el.find("backingStore/path")
+    bs_format_el = volume_el.find("backingStore/format")
+
+    assert format_el is not None
+    assert format_el.attrib["type"] == "qcow2"
+    assert bs_path_el is not None
+    assert bs_path_el.text == "/var/lib/libvirt/images/virtomate-simple-bios-raw"
+    assert bs_format_el is not None
+    assert bs_format_el.attrib["type"] == "raw"
+
+    cmd = ["virsh", "start", clone_name]
+    result = subprocess.run(cmd, text=True)
+    assert result.returncode == 0, "Could not start {}".format(clone_name)
+
+    wait_until_running(clone_name)
+
+
+def test_domain_clone_linked_simple_uefi(
+    simple_uefi_machine: str, automatic_cleanup: None
+) -> None:
+    clone_name = "virtomate-clone-linked"
+
+    cmd = [
+        "virtomate",
+        "domain-clone",
+        "--mode",
+        "linked",
+        simple_uefi_machine,
+        clone_name,
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0, "domain-clone failed unexpectedly"
+    assert result.stdout == ""
+    assert result.stderr == ""
+
+    volume_el = read_volume_xml(
+        "nvram", "virtomate-clone-linked-virtomate-simple-uefi-efivars.fd"
+    )
+    format_el = volume_el.find("target/format")
+    assert format_el is not None
+    assert format_el.attrib["type"] == "raw"
+    assert volume_el.find("backingStore") is None
+
+    volume_el = read_volume_xml(
+        "default", "virtomate-clone-linked-virtomate-simple-uefi"
+    )
+    format_el = volume_el.find("target/format")
+    bs_path_el = volume_el.find("backingStore/path")
+    bs_format_el = volume_el.find("backingStore/format")
+
+    assert format_el is not None
+    assert format_el.attrib["type"] == "qcow2"
+    assert bs_path_el is not None
+    assert bs_path_el.text == "/var/lib/libvirt/images/virtomate-simple-uefi"
+    assert bs_format_el is not None
+    assert bs_format_el.attrib["type"] == "qcow2"
+
+    cmd = ["virsh", "start", clone_name]
+    result = subprocess.run(cmd, text=True)
+    assert result.returncode == 0, "Could not start {}".format(clone_name)
+
+    wait_until_running(clone_name)
+
+
+def test_domain_clone_reflink_simple_bios_raw(
+    simple_bios_raw_machine: str, automatic_cleanup: None
+) -> None:
+    clone_name = "virtomate-clone-reflink"
+
+    cmd = [
+        "virtomate",
+        "domain-clone",
+        "--mode",
+        "reflink",
+        simple_bios_raw_machine,
+        clone_name,
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0, "domain-clone failed unexpectedly"
+    assert result.stdout == ""
+    assert result.stderr == ""
+
+    # Unfortunately, there is no tool that can tell apart a full from a shallow copy.
+    volume_el = read_volume_xml(
+        "default", "virtomate-clone-reflink-virtomate-simple-bios-raw"
+    )
+    format_el = volume_el.find("target/format")
+    assert format_el is not None
+    assert format_el.attrib["type"] == "raw"
+    assert volume_el.find("backingStore") is None
+
+    cmd = ["virsh", "start", clone_name]
+    result = subprocess.run(cmd, text=True)
+    assert result.returncode == 0, "Could not start {}".format(clone_name)
+
+    wait_until_running(clone_name)

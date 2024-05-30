@@ -122,6 +122,7 @@
     <interface type='network'>
       <mac address='52:54:00:3d:0e:bb'/>
       <source network='default'/>
+      <target dev='vnet0'/>
       <model type='virtio'/>
       <address type='pci' domain='0x0000' bus='0x01' slot='0x00' function='0x0'/>
     </interface>
@@ -149,6 +150,9 @@
     <graphics type='spice' autoport='yes'>
       <listen type='address'/>
       <image compression='off'/>
+    </graphics>
+    <graphics type='vnc' port='5904' sharePolicy='allow-exclusive'>
+      <listen type='address'/>
     </graphics>
     <sound model='ich9'>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x1b' function='0x0'/>

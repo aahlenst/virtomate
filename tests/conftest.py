@@ -29,6 +29,16 @@ def pytest_collection_modifyitems(
 
 
 @pytest.fixture
+def test_connection() -> Generator[libvirt.virConnect, None, None]:
+    conn = libvirt.open("test:///default")
+
+    yield conn
+
+    if conn is not None:
+        conn.close()
+
+
+@pytest.fixture
 def simple_bios_machine() -> str:
     vol_xml = """
     <volume>
@@ -96,6 +106,32 @@ def simple_uefi_machine() -> str:
             conn.close()
 
     return "virtomate-simple-uefi"
+
+
+@pytest.fixture
+def simple_bios_raw_machine() -> str:
+    vol_xml = """
+    <volume>
+        <name>virtomate-simple-bios-raw</name>
+        <target>
+            <format type='raw'/>
+        </target>
+    </volume>
+    """
+
+    conn = libvirt.open()
+    try:
+        pool_virtomate = conn.storagePoolLookupByName("virtomate")
+        vol_to_clone = pool_virtomate.storageVolLookupByName("simple-bios")
+
+        pool_default = conn.storagePoolLookupByName("default")
+        pool_default.createXMLFrom(vol_xml, vol_to_clone, 0)
+        conn.defineXML(resource_content("simple-bios-raw.xml"))
+    finally:
+        if conn is not None:
+            conn.close()
+
+    return "virtomate-simple-bios-raw"
 
 
 @pytest.fixture
