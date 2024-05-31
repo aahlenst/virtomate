@@ -445,6 +445,7 @@ class TestGuestPing:
         result = subprocess.run(cmd, capture_output=True)
         assert result.returncode == 1, "guest-ping succeeded unexpectedly"
         assert result.stdout == b""
+        # No error because the return code already indicates that the guest could not be reached.
         assert result.stderr == b""
 
     def test_guest_ping(
