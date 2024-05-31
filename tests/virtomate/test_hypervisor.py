@@ -3,7 +3,7 @@ from typing import Generator
 import libvirt
 import pytest
 
-from tests.resources import resource_content
+from tests.resources import fixture
 from virtomate import Hypervisor, AddressSource
 
 
@@ -47,8 +47,8 @@ def test_list_domains(hypervisor: Hypervisor) -> None:
     domain.undefine()
     assert hypervisor.list_domains() == []
 
-    conn.defineXML(resource_content("simple-bios.xml"))
-    conn.defineXML(resource_content("simple-uefi.xml"))
+    conn.defineXML(fixture("simple-bios.xml"))
+    conn.defineXML(fixture("simple-uefi.xml"))
 
     assert hypervisor.list_domains() == [
         {

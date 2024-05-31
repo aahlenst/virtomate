@@ -3,7 +3,7 @@ import random
 from libvirt import virConnect
 import pytest
 
-from tests.resources import resource_content
+from tests.resources import fixture
 from virtomate import LibvirtMACFactory
 
 
@@ -32,7 +32,7 @@ class TestLibvirtMACFactory:
         rnd = random.Random()
         rnd.seed(37)
 
-        test_connection.defineXML(resource_content("simple-uefi.xml"))
+        test_connection.defineXML(fixture("simple-uefi.xml"))
         mac_factory = LibvirtMACFactory(test_connection, rnd=rnd)
 
         assert mac_factory.create_from("52:54:00:4c:4e:25") == "52:54:00:e0:37:e9"

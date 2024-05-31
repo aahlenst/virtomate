@@ -1,7 +1,7 @@
 from uuid import UUID
 from xml.etree import ElementTree
 
-from tests.resources import resource_content
+from tests.resources import fixture, expectation
 from virtomate import (
     CloneOperation,
     MACFactory,
@@ -63,10 +63,8 @@ class TestSourceVolume:
 class TestCloneOperation:
     def test_clone_config_simple_bios_copy(self) -> None:
         name = "virtomate-clone-copy"
-        config = ElementTree.fromstring(resource_content("simple-bios.xml"))
-        clone_config = ElementTree.fromstring(
-            resource_content("clone-copy-simple-bios.xml")
-        )
+        config = ElementTree.fromstring(fixture("simple-bios.xml"))
+        clone_config = ElementTree.fromstring(expectation("clone-copy-simple-bios.xml"))
         mac_factory = FixedMACFactory("52:54:00:4c:4e:25")
         uuid_factory = FixedUUIDFactory(
             UUID(hex="e5a8d70e-0cb5-49af-bf66-59c13180e344")
@@ -80,9 +78,9 @@ class TestCloneOperation:
 
     def test_clone_config_simple_bios_linked(self) -> None:
         name = "virtomate-clone-linked"
-        config = ElementTree.fromstring(resource_content("simple-bios-raw.xml"))
+        config = ElementTree.fromstring(fixture("simple-bios-raw.xml"))
         clone_config = ElementTree.fromstring(
-            resource_content("clone-linked-simple-bios-raw.xml")
+            expectation("clone-linked-simple-bios-raw.xml")
         )
         mac_factory = FixedMACFactory("52:54:00:9a:e6:0e")
         uuid_factory = FixedUUIDFactory(
@@ -97,9 +95,9 @@ class TestCloneOperation:
 
     def test_clone_config_simple_bios_reflink(self) -> None:
         name = "virtomate-clone-reflink"
-        config = ElementTree.fromstring(resource_content("simple-bios-raw.xml"))
+        config = ElementTree.fromstring(fixture("simple-bios-raw.xml"))
         clone_config = ElementTree.fromstring(
-            resource_content("clone-reflink-simple-bios-raw.xml")
+            expectation("clone-reflink-simple-bios-raw.xml")
         )
         mac_factory = FixedMACFactory("52:54:00:ce:35:01")
         uuid_factory = FixedUUIDFactory(
@@ -114,10 +112,8 @@ class TestCloneOperation:
 
     def test_clone_config_simple_uefi_copy(self) -> None:
         name = "virtomate-clone-copy"
-        config = ElementTree.fromstring(resource_content("simple-uefi.xml"))
-        clone_config = ElementTree.fromstring(
-            resource_content("clone-copy-simple-uefi.xml")
-        )
+        config = ElementTree.fromstring(fixture("simple-uefi.xml"))
+        clone_config = ElementTree.fromstring(expectation("clone-copy-simple-uefi.xml"))
         mac_factory = FixedMACFactory("52:54:00:6c:91:a2")
         uuid_factory = FixedUUIDFactory(
             UUID(hex="70d6b969-6a1f-47f8-ab69-38cc33d000ea")

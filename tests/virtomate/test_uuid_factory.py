@@ -3,7 +3,7 @@ from uuid import UUID
 
 from libvirt import virConnect
 
-from tests.resources import resource_content
+from tests.resources import fixture
 from virtomate import LibvirtUUIDFactory
 
 
@@ -21,7 +21,7 @@ class TestLibvirtUUIDFactory:
         rnd = random.Random()
         rnd.seed(37)
 
-        test_connection.defineXML(resource_content("simple-uefi.xml"))
+        test_connection.defineXML(fixture("simple-uefi.xml"))
         uuid_factory = LibvirtUUIDFactory(test_connection, rnd=rnd)
 
         assert uuid_factory.create() == UUID(hex="bf2eb110-d788-4003-aa59-ce1e9e293641")

@@ -1,12 +1,15 @@
 import os.path
 
 
-def resource_path(*paths: str) -> str | bytes:
-    """Return the absolute path of a file in this module constructed from the relative path components."""
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), *paths))
+def fixture(name: str) -> str:
+    """Read and return the contents of the fixture with the given name."""
+    path = os.path.join(os.path.dirname(__file__), "fixtures", name)
+    with open(path) as f:
+        return f.read()
 
 
-def resource_content(*paths: str) -> str:
-    """Return the contents of a file in this module constructed from the relative path components."""
-    with open(resource_path(*paths)) as f:
+def expectation(name: str) -> str:
+    """Read and return the contents of the expectation with the given name."""
+    path = os.path.join(os.path.dirname(__file__), "expectations", name)
+    with open(path) as f:
         return f.read()

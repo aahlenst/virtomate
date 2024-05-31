@@ -3,7 +3,7 @@ from typing import Generator, List
 import libvirt
 import pytest
 
-from tests.resources import resource_content
+from tests.resources import fixture
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -57,7 +57,7 @@ def simple_bios_machine() -> str:
     try:
         pool_default = conn.storagePoolLookupByName("default")
         pool_default.createXML(vol_xml, 0)
-        conn.defineXML(resource_content("simple-bios.xml"))
+        conn.defineXML(fixture("simple-bios.xml"))
     finally:
         if conn is not None:
             conn.close()
@@ -100,7 +100,7 @@ def simple_uefi_machine() -> str:
         )
         pool_nvram.createXMLFrom(nvram_xml, nvram_vol, 0)
 
-        conn.defineXML(resource_content("simple-uefi.xml"))
+        conn.defineXML(fixture("simple-uefi.xml"))
     finally:
         if conn is not None:
             conn.close()
@@ -126,7 +126,7 @@ def simple_bios_raw_machine() -> str:
 
         pool_default = conn.storagePoolLookupByName("default")
         pool_default.createXMLFrom(vol_xml, vol_to_clone, 0)
-        conn.defineXML(resource_content("simple-bios-raw.xml"))
+        conn.defineXML(fixture("simple-bios-raw.xml"))
     finally:
         if conn is not None:
             conn.close()
