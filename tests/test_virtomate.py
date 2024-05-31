@@ -43,6 +43,12 @@ def wait_for_network(domain: str) -> None:
     assert len(json.loads(result.stdout)) > 0
 
 
+def start_domain(name: str) -> None:
+    cmd = ["virsh", "start", name]
+    result = subprocess.run(cmd)
+    assert result.returncode == 0, "Could not start {}".format(name)
+
+
 def domain_exists(name: str) -> bool:
     cmd = ["virtomate", "domain-list"]
     result = subprocess.run(cmd, check=True, capture_output=True)
@@ -157,10 +163,7 @@ def test_guest_ping(simple_bios_machine: str, automatic_cleanup: None) -> None:
     assert result.stdout == b""
     assert result.stderr == b""
 
-    cmd = ["virsh", "start", simple_bios_machine]
-    result = subprocess.run(cmd)
-    assert result.returncode == 0, "Could not start {}".format(simple_bios_machine)
-
+    start_domain(simple_bios_machine)
     wait_until_running(simple_bios_machine)
 
     cmd = ["virtomate", "guest-ping", simple_bios_machine]
@@ -178,10 +181,7 @@ def test_domain_iface_list(simple_bios_machine: str, automatic_cleanup: None) ->
     # TODO: Expect proper JSON error response
     assert result.stderr != b""
 
-    cmd = ["virsh", "start", simple_bios_machine]
-    result = subprocess.run(cmd)
-    assert result.returncode == 0, "Could not start {}".format(simple_bios_machine)
-
+    start_domain(simple_bios_machine)
     wait_until_running(simple_bios_machine)
     wait_for_network(simple_bios_machine)
 
@@ -276,10 +276,7 @@ def test_domain_clone_copy_simple_bios(
     assert format_el.attrib["type"] == "qcow2"
     assert volume_el.find("backingStore") is None
 
-    cmd = ["virsh", "start", clone_name]
-    result = subprocess.run(cmd, text=True)
-    assert result.returncode == 0, "Could not start {}".format(clone_name)
-
+    start_domain(clone_name)
     wait_until_running(clone_name)
 
 
@@ -315,10 +312,7 @@ def test_domain_clone_linked_simple_bios(
     assert bs_format_el is not None
     assert bs_format_el.attrib["type"] == "qcow2"
 
-    cmd = ["virsh", "start", clone_name]
-    result = subprocess.run(cmd, text=True)
-    assert result.returncode == 0, "Could not start {}".format(clone_name)
-
+    start_domain(clone_name)
     wait_until_running(clone_name)
 
 
@@ -354,10 +348,7 @@ def test_domain_clone_linked_simple_bios_raw(
     assert bs_format_el is not None
     assert bs_format_el.attrib["type"] == "raw"
 
-    cmd = ["virsh", "start", clone_name]
-    result = subprocess.run(cmd, text=True)
-    assert result.returncode == 0, "Could not start {}".format(clone_name)
-
+    start_domain(clone_name)
     wait_until_running(clone_name)
 
 
@@ -401,10 +392,7 @@ def test_domain_clone_linked_simple_uefi(
     assert bs_format_el is not None
     assert bs_format_el.attrib["type"] == "qcow2"
 
-    cmd = ["virsh", "start", clone_name]
-    result = subprocess.run(cmd, text=True)
-    assert result.returncode == 0, "Could not start {}".format(clone_name)
-
+    start_domain(clone_name)
     wait_until_running(clone_name)
 
 
@@ -435,8 +423,5 @@ def test_domain_clone_reflink_simple_bios_raw(
     assert format_el.attrib["type"] == "raw"
     assert volume_el.find("backingStore") is None
 
-    cmd = ["virsh", "start", clone_name]
-    result = subprocess.run(cmd, text=True)
-    assert result.returncode == 0, "Could not start {}".format(clone_name)
-
+    start_domain(clone_name)
     wait_until_running(clone_name)
