@@ -459,3 +459,61 @@ class TestGuestPing:
         assert result.returncode == 0, "Could not ping {}".format(simple_bios_machine)
         assert result.stdout == b""
         assert result.stderr == b""
+
+
+class TestVolumeList:
+    def test_list_nonexistent_pool(self) -> None:
+        cmd = ["virtomate", "volume-list", "does-not-exist"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 1, "volume-list succeeded unexpectedly"
+        # TODO: Expect proper JSON response
+        assert result.stderr != ""
+
+    def test_list(self) -> None:
+        cmd = ["virtomate", "volume-list", "virtomate"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 0, "Could not list volumes of pool virtomate"
+        assert result.stderr == ""
+
+        volumes = json.loads(result.stdout)
+        assert volumes == [
+            {
+                "name": "simple-bios",
+                "key": "/var/lib/libvirt/virtomate/simple-bios",
+                "capacity": ANY_INT,
+                "allocation": ANY_INT,
+                "physical": ANY_INT,
+                "type": "file",
+                "target": {
+                    "path": "/var/lib/libvirt/virtomate/simple-bios",
+                    "format_type": "qcow2",
+                },
+                "backing_store": None,
+            },
+            {
+                "name": "simple-uefi",
+                "key": "/var/lib/libvirt/virtomate/simple-uefi",
+                "capacity": ANY_INT,
+                "allocation": ANY_INT,
+                "physical": ANY_INT,
+                "type": "file",
+                "target": {
+                    "path": "/var/lib/libvirt/virtomate/simple-uefi",
+                    "format_type": "qcow2",
+                },
+                "backing_store": None,
+            },
+            {
+                "name": "simple-uefi-efivars.fd",
+                "key": "/var/lib/libvirt/virtomate/simple-uefi-efivars.fd",
+                "capacity": ANY_INT,
+                "allocation": ANY_INT,
+                "physical": ANY_INT,
+                "type": "file",
+                "target": {
+                    "path": "/var/lib/libvirt/virtomate/simple-uefi-efivars.fd",
+                    "format_type": "raw",
+                },
+                "backing_store": None,
+            },
+        ]

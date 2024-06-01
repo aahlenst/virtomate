@@ -109,3 +109,77 @@ def test_clone_domain(hypervisor: Hypervisor) -> None:
 
     # Unfortunately, it is impossible to test the happy path with the test driver because it neither persists disks nor
     # does it implement all required libvirt functions.
+
+
+def test_list_volumes_empty_pool(hypervisor: Hypervisor) -> None:
+    assert hypervisor.list_volumes("default-pool") == []
+
+
+def test_list_volumes_nonexistent_pool(hypervisor: Hypervisor) -> None:
+    with pytest.raises(libvirt.libvirtError) as ex:
+        hypervisor.list_volumes("does-not-exist")
+
+    assert (
+        str(ex.value)
+        == "Storage pool not found: no storage pool with matching name 'does-not-exist'"
+    )
+
+
+def test_list_volumes(hypervisor: Hypervisor) -> None:
+    raw_volume_xml = """
+    <volume>
+        <name>raw-volume</name>
+        <capacity unit="bytes">10737418240</capacity>
+        <target>
+            <format type="raw"/>
+        </target>
+    </volume>
+    """
+
+    linked_volume_xml = """
+    <volume>
+        <name>linked-volume</name>
+        <capacity unit="bytes">10737418240</capacity>
+        <target>
+            <format type="qcow2"/>
+        </target>
+        <backingStore>
+            <path>/default-pool/my-volume</path>
+            <format type='raw'/>
+        </backingStore>
+    </volume>
+    """
+
+    conn = hypervisor.connection()
+    default_pool = conn.storagePoolLookupByName("default-pool")
+    default_pool.createXML(raw_volume_xml)
+    default_pool.createXML(linked_volume_xml)
+
+    assert hypervisor.list_volumes("default-pool") == [
+        {
+            "allocation": 10737418240,
+            "backing_store": {"format_type": "raw", "path": "/default-pool/my-volume"},
+            "capacity": 10737418240,
+            "key": "/default-pool/linked-volume",
+            "name": "linked-volume",
+            "physical": None,
+            "target": {
+                "format_type": "qcow2",
+                "path": "/default-pool/linked-volume",
+            },
+            "type": "file",
+        },
+        {
+            "allocation": 10737418240,
+            "backing_store": None,
+            "capacity": 10737418240,
+            "key": "/default-pool/raw-volume",
+            "name": "raw-volume",
+            "physical": None,
+            "target": {
+                "format_type": "raw",
+                "path": "/default-pool/raw-volume",
+            },
+            "type": "file",
+        },
+    ]
