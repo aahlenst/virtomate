@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
 from random import Random
-from typing import Dict, TypedDict, List
+from typing import TypedDict, List
 from uuid import UUID
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
@@ -15,8 +15,6 @@ import libvirt
 from libvirt import virConnect
 
 logger = logging.getLogger(__name__)
-
-AddressList = Sequence[Dict[str, str]]
 
 # Maps virDomainState to a human-readable string.
 # https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainState
@@ -41,6 +39,28 @@ class DomainDescriptor(TypedDict):
     """Name of the domain"""
     state: str
     """Current state of the domain"""
+
+
+class AddressDescriptor(TypedDict):
+    """Descriptor of an interface address of a libvirt domain."""
+
+    address: str
+    """Address assigned to this interface"""
+    prefix: int
+    """Prefix (netmask) of the address"""
+    type: str
+    """Human-readable type of the address (either `IPv4` or `IPv6`)"""
+
+
+class InterfaceDescriptor(TypedDict):
+    """Descriptor of an interface of a libvirt domain."""
+
+    name: str
+    """Human-readable name of the interface"""
+    hwaddr: str
+    """MAC address of the interface"""
+    addresses: Sequence[AddressDescriptor]
+    """Addresses assigned to the interface"""
 
 
 class AddressSource(Enum):
@@ -81,7 +101,7 @@ def list_domains(conn: virConnect) -> Sequence[DomainDescriptor]:
 
 def list_domain_interfaces(
     conn: virConnect, domain_name: str, source: AddressSource
-) -> AddressList:
+) -> Sequence[InterfaceDescriptor]:
     """List all network interfaces of a domain."""
     domain = conn.lookupByName(domain_name)
 
@@ -97,9 +117,9 @@ def list_domain_interfaces(
 
     interfaces = domain.interfaceAddresses(s, 0)
 
-    result = []
+    result: List[InterfaceDescriptor] = []
     for name, props in interfaces.items():
-        addresses = []
+        addresses: List[AddressDescriptor] = []
         for addr in props["addrs"]:
             # https://libvirt.org/html/libvirt-libvirt-network.html#virIPAddrType
             match addr["type"]:
@@ -112,14 +132,14 @@ def list_domain_interfaces(
                         "Unknown address type: {}".format(addr["type"])
                     )
 
-            address = {
+            address: AddressDescriptor = {
                 "address": addr["addr"],
                 "prefix": addr["prefix"],
                 "type": addr_type,
             }
             addresses.append(address)
 
-        interface = {
+        interface: InterfaceDescriptor = {
             "name": name,
             "hwaddr": props["hwaddr"],
             "addresses": sorted(addresses, key=lambda a: a["address"]),
