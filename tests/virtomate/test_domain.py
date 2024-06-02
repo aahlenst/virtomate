@@ -24,7 +24,7 @@ from virtomate.domain import (
 
 
 class TestListDomains:
-    def test_list_domains(self, test_connection: virConnect) -> None:
+    def test_list(self, test_connection: virConnect) -> None:
         assert list_domains(test_connection) == [
             {
                 "uuid": "6695eb01-f6a4-8304-79aa-97f2502e193f",
@@ -74,11 +74,11 @@ class TestListDomains:
 
 
 class TestListDomainInterfaces:
-    def test_list_domain_interfaces(self, test_connection: virConnect) -> None:
+    def test_error_if_domain_not_defined(self, test_connection: virConnect) -> None:
         with pytest.raises(libvirt.libvirtError, match="Domain not found"):
             list_domain_interfaces(test_connection, "unknown", AddressSource.AGENT)
 
-        # It makes no sense to test additional address sources because the mock driver always returns the same answer.
+    def test_source_lease(self, test_connection: virConnect) -> None:
         assert list_domain_interfaces(test_connection, "test", AddressSource.LEASE) == [
             {
                 "name": "testnet0",
@@ -89,6 +89,31 @@ class TestListDomainInterfaces:
             }
         ]
 
+    def test_source_agent(self, test_connection: virConnect) -> None:
+        assert list_domain_interfaces(test_connection, "test", AddressSource.AGENT) == [
+            {
+                "name": "testnet0",
+                "hwaddr": "aa:bb:cc:dd:ee:ff",
+                "addresses": [
+                    {"address": "192.168.122.3", "prefix": 24, "type": "IPv4"}
+                ],
+            }
+        ]
+
+    def test_source_arp(self, test_connection: virConnect) -> None:
+        # The mock driver always returns the same answer, regardless of the source. Hence, the prefix is wrong. It
+        # should be 0 because ARP does not know anything about prefixes.
+        assert list_domain_interfaces(test_connection, "test", AddressSource.ARP) == [
+            {
+                "name": "testnet0",
+                "hwaddr": "aa:bb:cc:dd:ee:ff",
+                "addresses": [
+                    {"address": "192.168.122.3", "prefix": 24, "type": "IPv4"}
+                ],
+            }
+        ]
+
+    def test_error_domain_not_running(self, test_connection: virConnect) -> None:
         domain = test_connection.lookupByName("test")
         domain.shutdown()
 
@@ -100,7 +125,7 @@ class TestCloneDomain:
     # Unfortunately, it is impossible to test the happy path with the test driver because it does not implement all
     # required libvirt functions.
 
-    def test_clone_domain(self, test_connection: virConnect) -> None:
+    def test_error_if_domain_running(self, test_connection: virConnect) -> None:
         assert list_domains(test_connection) == [
             {
                 "uuid": "6695eb01-f6a4-8304-79aa-97f2502e193f",
@@ -112,12 +137,14 @@ class TestCloneDomain:
         with pytest.raises(Exception):
             clone_domain(test_connection, "test", "my-clone")
 
+    def test_error_if_new_name_identical(self, test_connection: virConnect) -> None:
         domain_test = test_connection.lookupByName("test")
         domain_test.shutdown()
 
         with pytest.raises(Exception):
             clone_domain(test_connection, "test", "test")
 
+    def test_error_if_source_undefined(self, test_connection: virConnect) -> None:
         with pytest.raises(Exception):
             clone_domain(test_connection, "does-not-exist", "my-clone")
 
