@@ -6,6 +6,8 @@ import json
 import logging
 import re
 import os.path
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import TypedDict, Iterable
 from dataclasses import dataclass
 from enum import Enum
@@ -18,8 +20,9 @@ from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
 import libvirt
-import libvirt_qemu
 from libvirt import virConnect
+
+from virtomate import guest
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +87,40 @@ class VolumeDescriptor(TypedDict):
     type: str | None
     target: TargetDescriptor | None
     backing_store: BackingStoreDescriptor | None
+
+
+@contextmanager
+def connect(uri: str | None = None) -> Iterator[virConnect]:
+    """Connect to a hypervisor using the given `uri` through libvirt. If `uri` is `None`, libvirt will use the following
+    logic to determine what URI to use:
+
+    1. The environment variable `LIBVIRT_DEFAULT_URI`
+    2. The `uri_default` parameter defined in the client configuration file
+    3. The first working hypervisor encountered
+
+    See the libvirt documentation for supported `Connection URIs`_.
+
+    Example:
+        >>> with connect("test:///default") as conn:
+        ...   ...
+
+    Args:
+        uri: libvirt connection URI or `None`
+
+    Yields:
+        libvirt connection
+
+    Raises:
+        libvirt.libvirtError: The connection could not be established.
+
+    .. _Connection URIs:
+        https://www.python.org/dev/peps/pep-0484/
+    """
+    conn = libvirt.open(uri)
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 
 class Hypervisor:
@@ -180,18 +217,6 @@ class Hypervisor:
 
         # Sort to ensure stable order
         return sorted(result, key=lambda i: i["hwaddr"])
-
-    def ping_guest(self, domain_name: str) -> bool:
-        domain = self._conn.lookupByName(domain_name)
-        cmd = {"execute": "guest-ping"}
-        json_cmd = json.dumps(cmd)
-        try:
-            libvirt_qemu.qemuAgentCommand(
-                domain, json_cmd, libvirt_qemu.VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT, 0
-            )
-            return True
-        except libvirt.libvirtError:
-            return False
 
     def clone_domain(
         self, name: str, new_name: str, mode: CloneMode = CloneMode.COPY
@@ -704,8 +729,8 @@ def list_domain_interfaces(args: argparse.Namespace) -> int:
 
 
 def ping_guest(args: argparse.Namespace) -> int:
-    with Hypervisor(args.connection) as hypervisor:
-        if hypervisor.ping_guest(args.domain):
+    with connect(args.connection) as conn:
+        if guest.ping_guest(conn, args.domain):
             return 0
         else:
             return 1
