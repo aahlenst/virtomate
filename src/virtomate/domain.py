@@ -420,8 +420,9 @@ class CloneOperation:
 
             # While `CloneMode.COPY` and `CloneMode.LINKED` should work with any volume format, `CloneMode.REFLINK` is
             # limited to filesystems with reflink support and raw volumes due to libvirt's reliance on qemu-img (see
-            # https://bugzilla.redhat.com/show_bug.cgi?id=1324006). We leave it to libvirt to raise errors because libvirt
-            # knows best, and it spares us to perform version checks, for example, "Raise exception if libvirt < X".
+            # https://bugzilla.redhat.com/show_bug.cgi?id=1324006). We leave it to libvirt to raise errors because
+            # libvirt knows best, and it spares us to perform version checks, for example, "Raise exception if libvirt
+            # version is smaller than X".
             #
             # Invoking `cp` ourselves to work around qemu-img's deficiencies is not an option because virtomate might
             # operate on a remote machine.
