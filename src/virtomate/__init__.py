@@ -8,7 +8,6 @@ import re
 import os.path
 from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import TypedDict, Iterable
 from dataclasses import dataclass
 from enum import Enum
 import random
@@ -22,7 +21,7 @@ from xml.etree.ElementTree import Element
 import libvirt
 from libvirt import virConnect
 
-from virtomate import guest
+from virtomate import guest, volume
 
 logger = logging.getLogger(__name__)
 
@@ -66,27 +65,6 @@ class CloneMode(Enum):
     REFLINK = 2
 
     LINKED = 3
-
-
-class TargetDescriptor(TypedDict):
-    path: str
-    format_type: str | None
-
-
-class BackingStoreDescriptor(TypedDict):
-    path: str | None
-    format_type: str | None
-
-
-class VolumeDescriptor(TypedDict):
-    name: str
-    key: str
-    capacity: int | None
-    allocation: int | None
-    physical: int | None
-    type: str | None
-    target: TargetDescriptor | None
-    backing_store: BackingStoreDescriptor | None
 
 
 @contextmanager
@@ -239,10 +217,6 @@ class Hypervisor:
 
         op = CloneOperation(config, new_name, mode, uuid_factory, mac_factory)
         op.perform(self._conn)
-
-    def list_volumes(self, pool_name: str) -> Iterable[VolumeDescriptor]:
-        op = ListVolumesOperation()
-        return op.perform(self._conn, pool_name)
 
     def close(self) -> None:
         if self._conn is not None:
@@ -621,71 +595,6 @@ class CloneOperation:
             )
 
 
-class ListVolumesOperation:
-    def perform(self, conn: virConnect, pool_name: str) -> Iterable[VolumeDescriptor]:
-        volumes = []
-        pool = conn.storagePoolLookupByName(pool_name)
-        for volume in pool.listAllVolumes(0):
-            # Schema: https://gitlab.com/libvirt/libvirt/-/blob/master/src/conf/schemas/storagevol.rng
-            volume_desc = volume.XMLDesc()
-            volume_tag = ElementTree.fromstring(volume_desc)
-
-            # Attribute type is optional
-            volume_type = volume_tag.get("type")
-
-            # target/format is optional
-            format_type = None
-            target_format_tag = volume_tag.find("target/format")
-            if target_format_tag is not None:
-                format_type = target_format_tag.get("type")
-
-            volume_props: VolumeDescriptor = {
-                "name": volume.name(),
-                "key": volume.key(),
-                "capacity": self._extract_size("capacity", volume_tag),
-                "allocation": self._extract_size("allocation", volume_tag),
-                "physical": self._extract_size("physical", volume_tag),
-                "type": volume_type,
-                "target": {"path": volume.path(), "format_type": format_type},
-                "backing_store": self._extract_backing_store(volume_tag),
-            }
-
-            volumes.append(volume_props)
-
-        return sorted(volumes, key=lambda vol: vol["name"])
-
-    def _extract_size(self, tag_name: str, volume_tag: Element) -> int | None:
-        size_tag = volume_tag.find(tag_name)
-        if size_tag is not None and size_tag.text is not None:
-            unit = size_tag.get("unit")
-            # Internally, libvirt operates on bytes. Therefore, we should never encounter any other unit.
-            # https://gitlab.com/libvirt/libvirt/-/blob/master/include/libvirt/libvirt-storage.h#L248
-            assert unit is None or unit == "bytes"
-
-            # int in Python is only bound by available memory, see https://peps.python.org/pep-0237/
-            return int(size_tag.text)
-
-        return None
-
-    def _extract_backing_store(
-        self, volume_tag: Element
-    ) -> BackingStoreDescriptor | None:
-        bs_tag = volume_tag.find("backingStore")
-        if bs_tag is None:
-            return None
-
-        backing_store = BackingStoreDescriptor(path=None, format_type=None)
-        path_tag = bs_tag.find("path")
-        if path_tag is not None:
-            backing_store["path"] = path_tag.text
-
-        format_tag = bs_tag.find("format")
-        if format_tag is not None:
-            backing_store["format_type"] = format_tag.get("type")
-
-        return backing_store
-
-
 def list_domains(args: argparse.Namespace) -> int:
     with Hypervisor(args.connection) as hypervisor:
         result = hypervisor.list_domains()
@@ -737,8 +646,8 @@ def ping_guest(args: argparse.Namespace) -> int:
 
 
 def list_volumes(args: argparse.Namespace) -> int:
-    with Hypervisor(args.connection) as hypervisor:
-        result = hypervisor.list_volumes(args.pool)
+    with connect(args.connection) as conn:
+        result = volume.list_volumes(conn, args.pool)
         print(json.dumps(result))
         return 0
 

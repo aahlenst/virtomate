@@ -1,9 +1,11 @@
+from collections.abc import Iterator
 from typing import Generator, List
 
 import libvirt
 import pytest
 
 from tests.resources import fixture
+from virtomate import connect
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -29,13 +31,9 @@ def pytest_collection_modifyitems(
 
 
 @pytest.fixture
-def test_connection() -> Generator[libvirt.virConnect, None, None]:
-    conn = libvirt.open("test:///default")
-
-    yield conn
-
-    if conn is not None:
-        conn.close()
+def test_connection() -> Iterator[libvirt.virConnect]:
+    with connect("test:///default") as conn:
+        yield conn
 
 
 @pytest.fixture
