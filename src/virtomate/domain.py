@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
 from random import Random
-from typing import Dict
+from typing import Dict, TypedDict, List
 from uuid import UUID
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
@@ -16,7 +16,6 @@ from libvirt import virConnect
 
 logger = logging.getLogger(__name__)
 
-MachineList = Sequence[Dict[str, str]]
 AddressList = Sequence[Dict[str, str]]
 
 # Maps virDomainState to a human-readable string.
@@ -31,6 +30,17 @@ STATE_MAPPINGS: dict[int, str] = {
     libvirt.VIR_DOMAIN_CRASHED: "crashed",
     libvirt.VIR_DOMAIN_PMSUSPENDED: "suspended",
 }
+
+
+class DomainDescriptor(TypedDict):
+    """Descriptor of a libvirt domain."""
+
+    uuid: str
+    """UUID of the domain"""
+    name: str
+    """Name of the domain"""
+    state: str
+    """Current state of the domain"""
 
 
 class AddressSource(Enum):
@@ -49,16 +59,16 @@ class CloneMode(Enum):
     LINKED = 3
 
 
-def list_domains(conn: virConnect) -> MachineList:
+def list_domains(conn: virConnect) -> Sequence[DomainDescriptor]:
     domains = conn.listAllDomains()
-    mapped_domains = []
+    mapped_domains: List[DomainDescriptor] = []
     for domain in domains:
         (state, _) = domain.state()
         readable_state = "unknown"
         if state in STATE_MAPPINGS:
             readable_state = STATE_MAPPINGS[state]
 
-        mapped_domain = {
+        mapped_domain: DomainDescriptor = {
             "uuid": domain.UUIDString(),
             "name": domain.name(),
             "state": readable_state,
