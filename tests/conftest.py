@@ -12,22 +12,33 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--functional", action="store_true", default=False, help="run functional tests"
     )
+    parser.addoption(
+        "--reflink",
+        action="store_true",
+        default=False,
+        help="run tests that require reflink support",
+    )
 
 
 def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line("markers", "functional: mark test as functional test")
+    config.addinivalue_line(
+        "markers", "reflink: mark test as requiring reflink (Btrfs, XFS) support"
+    )
 
 
 def pytest_collection_modifyitems(
     config: pytest.Config, items: List[pytest.Item]
 ) -> None:
-    if config.getoption("--functional"):
-        return
-
     skip_functional = pytest.mark.skip(reason="needs --functional to run")
     for item in items:
-        if "functional" in item.keywords:
+        if "functional" in item.keywords and not config.getoption("--functional"):
             item.add_marker(skip_functional)
+
+    skip_reflink = pytest.mark.skip(reason="needs --reflink to run")
+    for item in items:
+        if "reflink" in item.keywords and not config.getoption("--reflink"):
+            item.add_marker(skip_reflink)
 
 
 @pytest.fixture

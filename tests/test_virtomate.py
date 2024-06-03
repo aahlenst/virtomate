@@ -401,6 +401,7 @@ class TestDomainClone:
         start_domain(clone_name)
         wait_until_running(clone_name)
 
+    @pytest.mark.reflink
     def test_reflink_copy(
         self, simple_bios_raw_machine: str, automatic_cleanup: None
     ) -> None:
