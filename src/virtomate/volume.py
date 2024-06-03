@@ -41,8 +41,8 @@ def list_volumes(conn: virConnect, pool_name: str) -> Iterable[VolumeDescriptor]
     pool = conn.storagePoolLookupByName(pool_name)
     for volume in pool.listAllVolumes(0):
         # Schema: https://gitlab.com/libvirt/libvirt/-/blob/master/src/conf/schemas/storagevol.rng
-        volume_desc = volume.XMLDesc()
-        volume_tag = ElementTree.fromstring(volume_desc)
+        volume_xml = volume.XMLDesc()
+        volume_tag = ElementTree.fromstring(volume_xml)
 
         # Attribute type is optional
         volume_type = volume_tag.get("type")

@@ -277,13 +277,13 @@ class TestDomainClone:
         assert result.stdout == ""
         assert result.stderr == ""
 
-        volume_el = read_volume_xml(
+        volume_tag = read_volume_xml(
             "default", "virtomate-clone-copy-virtomate-simple-bios"
         )
-        format_el = volume_el.find("target/format")
-        assert format_el is not None
-        assert format_el.attrib["type"] == "qcow2"
-        assert volume_el.find("backingStore") is None
+        format_tag = volume_tag.find("target/format")
+        assert format_tag is not None
+        assert format_tag.attrib["type"] == "qcow2"
+        assert volume_tag.find("backingStore") is None
 
         start_domain(clone_name)
         wait_until_running(clone_name)
@@ -306,19 +306,19 @@ class TestDomainClone:
         assert result.stdout == ""
         assert result.stderr == ""
 
-        volume_el = read_volume_xml(
+        volume_tag = read_volume_xml(
             "default", "virtomate-clone-linked-virtomate-simple-bios"
         )
-        format_el = volume_el.find("target/format")
-        bs_path_el = volume_el.find("backingStore/path")
-        bs_format_el = volume_el.find("backingStore/format")
+        format_tag = volume_tag.find("target/format")
+        bs_path_tag = volume_tag.find("backingStore/path")
+        bs_format_tag = volume_tag.find("backingStore/format")
 
-        assert format_el is not None
-        assert format_el.attrib["type"] == "qcow2"
-        assert bs_path_el is not None
-        assert bs_path_el.text == "/var/lib/libvirt/images/virtomate-simple-bios"
-        assert bs_format_el is not None
-        assert bs_format_el.attrib["type"] == "qcow2"
+        assert format_tag is not None
+        assert format_tag.attrib["type"] == "qcow2"
+        assert bs_path_tag is not None
+        assert bs_path_tag.text == "/var/lib/libvirt/images/virtomate-simple-bios"
+        assert bs_format_tag is not None
+        assert bs_format_tag.attrib["type"] == "qcow2"
 
         start_domain(clone_name)
         wait_until_running(clone_name)
@@ -341,19 +341,19 @@ class TestDomainClone:
         assert result.stdout == ""
         assert result.stderr == ""
 
-        volume_el = read_volume_xml(
+        volume_tag = read_volume_xml(
             "default", "virtomate-clone-linked-virtomate-simple-bios-raw"
         )
-        format_el = volume_el.find("target/format")
-        bs_path_el = volume_el.find("backingStore/path")
-        bs_format_el = volume_el.find("backingStore/format")
+        format_tag = volume_tag.find("target/format")
+        bs_path_tag = volume_tag.find("backingStore/path")
+        bs_format_tag = volume_tag.find("backingStore/format")
 
-        assert format_el is not None
-        assert format_el.attrib["type"] == "qcow2"
-        assert bs_path_el is not None
-        assert bs_path_el.text == "/var/lib/libvirt/images/virtomate-simple-bios-raw"
-        assert bs_format_el is not None
-        assert bs_format_el.attrib["type"] == "raw"
+        assert format_tag is not None
+        assert format_tag.attrib["type"] == "qcow2"
+        assert bs_path_tag is not None
+        assert bs_path_tag.text == "/var/lib/libvirt/images/virtomate-simple-bios-raw"
+        assert bs_format_tag is not None
+        assert bs_format_tag.attrib["type"] == "raw"
 
         start_domain(clone_name)
         wait_until_running(clone_name)
@@ -376,27 +376,27 @@ class TestDomainClone:
         assert result.stdout == ""
         assert result.stderr == ""
 
-        volume_el = read_volume_xml(
+        volume_tag = read_volume_xml(
             "nvram", "virtomate-clone-linked-virtomate-simple-uefi-efivars.fd"
         )
-        format_el = volume_el.find("target/format")
-        assert format_el is not None
-        assert format_el.attrib["type"] == "raw"
-        assert volume_el.find("backingStore") is None
+        format_tag = volume_tag.find("target/format")
+        assert format_tag is not None
+        assert format_tag.attrib["type"] == "raw"
+        assert volume_tag.find("backingStore") is None
 
-        volume_el = read_volume_xml(
+        volume_tag = read_volume_xml(
             "default", "virtomate-clone-linked-virtomate-simple-uefi"
         )
-        format_el = volume_el.find("target/format")
-        bs_path_el = volume_el.find("backingStore/path")
-        bs_format_el = volume_el.find("backingStore/format")
+        format_tag = volume_tag.find("target/format")
+        bs_path_tag = volume_tag.find("backingStore/path")
+        bs_format_tag = volume_tag.find("backingStore/format")
 
-        assert format_el is not None
-        assert format_el.attrib["type"] == "qcow2"
-        assert bs_path_el is not None
-        assert bs_path_el.text == "/var/lib/libvirt/images/virtomate-simple-uefi"
-        assert bs_format_el is not None
-        assert bs_format_el.attrib["type"] == "qcow2"
+        assert format_tag is not None
+        assert format_tag.attrib["type"] == "qcow2"
+        assert bs_path_tag is not None
+        assert bs_path_tag.text == "/var/lib/libvirt/images/virtomate-simple-uefi"
+        assert bs_format_tag is not None
+        assert bs_format_tag.attrib["type"] == "qcow2"
 
         start_domain(clone_name)
         wait_until_running(clone_name)
@@ -421,13 +421,13 @@ class TestDomainClone:
         assert result.stderr == ""
 
         # Unfortunately, there is no tool that can tell apart a full from a shallow copy.
-        volume_el = read_volume_xml(
+        volume_tag = read_volume_xml(
             "default", "virtomate-clone-reflink-virtomate-simple-bios-raw"
         )
-        format_el = volume_el.find("target/format")
-        assert format_el is not None
-        assert format_el.attrib["type"] == "raw"
-        assert volume_el.find("backingStore") is None
+        format_tag = volume_tag.find("target/format")
+        assert format_tag is not None
+        assert format_tag.attrib["type"] == "raw"
+        assert volume_tag.find("backingStore") is None
 
         start_domain(clone_name)
         wait_until_running(clone_name)

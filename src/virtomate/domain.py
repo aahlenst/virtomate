@@ -241,12 +241,12 @@ class LibvirtMACFactory(MACFactory):
             # the ARP cache to prevent collisions with running machines on other hosts is not possible because libvirt
             # does not expose it. Asking `arp` does not work either because we might be connected to a remote host in a
             # different network.
-            root = ElementTree.fromstring(domain.XMLDesc(0))
-            for mac_element in root.findall("devices/interface/mac"):
-                if "address" not in mac_element.attrib:
+            domain_tag = ElementTree.fromstring(domain.XMLDesc(0))
+            for mac_tag in domain_tag.findall("devices/interface/mac"):
+                if "address" not in mac_tag.attrib:
                     continue
 
-                if mac_element.attrib["address"] == mac_address:
+                if mac_tag.attrib["address"] == mac_address:
                     return True
 
         return False
@@ -478,10 +478,10 @@ class CloneOperation:
 
     @staticmethod
     def _copy_firmware(conn: virConnect, source_fw: SourceFirmware) -> None:
-        volume_el = ElementTree.Element("volume")
-        name_el = ElementTree.SubElement(volume_el, "name")
-        name_el.text = source_fw.cloned_volume_name
-        volume_xml = ElementTree.tostring(volume_el, encoding="unicode")
+        mac_tag = ElementTree.Element("volume")
+        name_tag = ElementTree.SubElement(mac_tag, "name")
+        name_tag.text = source_fw.cloned_volume_name
+        volume_xml = ElementTree.tostring(mac_tag, encoding="unicode")
 
         pool = conn.storagePoolLookupByTargetPath(source_fw.pool_path)
         fw_to_copy = conn.storageVolLookupByPath(source_fw.source_path)
@@ -491,12 +491,14 @@ class CloneOperation:
     def _copy_volume(
         conn: virConnect, source_volume: SourceVolume, reflink: bool = False
     ) -> None:
-        volume_el = ElementTree.Element("volume")
-        name_el = ElementTree.SubElement(volume_el, "name")
-        name_el.text = source_volume.cloned_volume_name
-        target_el = ElementTree.SubElement(volume_el, "target")
-        ElementTree.SubElement(target_el, "format", {"type": source_volume.source_type})
-        volume_xml = ElementTree.tostring(volume_el, encoding="unicode")
+        volume_tag = ElementTree.Element("volume")
+        name_tag = ElementTree.SubElement(volume_tag, "name")
+        name_tag.text = source_volume.cloned_volume_name
+        target_tag = ElementTree.SubElement(volume_tag, "target")
+        ElementTree.SubElement(
+            target_tag, "format", {"type": source_volume.source_type}
+        )
+        volume_xml = ElementTree.tostring(volume_tag, encoding="unicode")
 
         create_flags = 0
         if reflink:
@@ -508,18 +510,18 @@ class CloneOperation:
 
     @staticmethod
     def _link_volume(conn: virConnect, source_volume: SourceVolume) -> None:
-        volume_el = ElementTree.Element("volume")
-        name_el = ElementTree.SubElement(volume_el, "name")
-        name_el.text = source_volume.cloned_volume_name
-        target_el = ElementTree.SubElement(volume_el, "target")
-        ElementTree.SubElement(target_el, "format", {"type": "qcow2"})
-        backing_store_el = ElementTree.SubElement(volume_el, "backingStore")
-        path_el = ElementTree.SubElement(backing_store_el, "path")
-        path_el.text = source_volume.source_path
+        volume_tag = ElementTree.Element("volume")
+        name_tag = ElementTree.SubElement(volume_tag, "name")
+        name_tag.text = source_volume.cloned_volume_name
+        target_tag = ElementTree.SubElement(volume_tag, "target")
+        ElementTree.SubElement(target_tag, "format", {"type": "qcow2"})
+        backing_store_tag = ElementTree.SubElement(volume_tag, "backingStore")
+        path_tag = ElementTree.SubElement(backing_store_tag, "path")
+        path_tag.text = source_volume.source_path
         ElementTree.SubElement(
-            backing_store_el, "format", {"type": source_volume.source_type}
+            backing_store_tag, "format", {"type": source_volume.source_type}
         )
-        volume_xml = ElementTree.tostring(volume_el, encoding="unicode")
+        volume_xml = ElementTree.tostring(volume_tag, encoding="unicode")
 
         pool = conn.storagePoolLookupByTargetPath(source_volume.pool_path)
         pool.createXML(volume_xml)
