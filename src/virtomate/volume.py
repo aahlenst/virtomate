@@ -23,7 +23,7 @@ class VolumeDescriptor(TypedDict):
     allocation: int | None
     physical: int | None
     type: str | None
-    target: TargetDescriptor | None
+    target: TargetDescriptor
     backing_store: BackingStoreDescriptor | None
 
 
