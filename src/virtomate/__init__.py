@@ -126,7 +126,7 @@ def main() -> int:
     sp = p.add_subparsers(title="Subcommands")
 
     # domain-list
-    p_domain_list = sp.add_parser("domain-list", help="List all domains")
+    p_domain_list = sp.add_parser("domain-list", help="list all domains")
     p_domain_list.set_defaults(func=list_domains)
 
     # domain-clone
@@ -155,9 +155,9 @@ def main() -> int:
 
     # domain-iface-list
     p_domain_iface_list = sp.add_parser(
-        "domain-iface-list", help="List network interfaces of a running domain"
+        "domain-iface-list", help="list network interfaces of a running domain"
     )
-    p_domain_iface_list.add_argument("domain", type=str, help="Name of the domain")
+    p_domain_iface_list.add_argument("domain", type=str, help="name of the domain")
     p_domain_iface_list.add_argument(
         "--source",
         choices=(
@@ -166,16 +166,16 @@ def main() -> int:
             "arp",
         ),
         default="lease",
-        help="Source of the addresses (default: %(default)s)",
+        help="source of the addresses (default: %(default)s)",
     )
     p_domain_iface_list.set_defaults(func=list_domain_interfaces)
 
     # guest-ping
-    p_guest_ping = sp.add_parser("guest-ping", help="Ping the QEMU Guest Agent")
+    p_guest_ping = sp.add_parser("guest-ping", help="ping the QEMU Guest Agent")
     p_guest_ping.add_argument(
         "domain",
         type=str,
-        help="Name of the domain to ping",
+        help="name of the domain to ping",
     )
     p_guest_ping.set_defaults(func=ping_guest)
 
