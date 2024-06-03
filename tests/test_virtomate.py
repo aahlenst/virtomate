@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import subprocess
+from collections.abc import Sequence
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
@@ -9,6 +10,8 @@ import pytest
 from tenacity import stop_after_attempt, wait_fixed, retry
 import importlib.metadata
 from tests.matchers import ANY_STR, ANY_INT
+from virtomate.domain import DomainDescriptor
+from virtomate.volume import VolumeDescriptor
 
 logger = logging.getLogger(__name__)
 
@@ -49,22 +52,24 @@ def start_domain(name: str) -> None:
     assert result.returncode == 0, "Could not start {}".format(name)
 
 
-def domain_exists(name: str) -> bool:
-    cmd = ["virtomate", "domain-list"]
-    result = subprocess.run(cmd, check=True, capture_output=True)
-    domains = json.loads(result.stdout)
-
-    for domain in domains:
-        if domain["name"] == name:
-            return True
-
-    return False
-
-
 def read_volume_xml(pool: str, volume: str) -> Element:
     cmd = ["virsh", "vol-dumpxml", "--pool", pool, volume]
     result = subprocess.run(cmd, check=True, capture_output=True)
     return ElementTree.fromstring(result.stdout)
+
+
+def list_virtomate_domains() -> Sequence[DomainDescriptor]:
+    cmd = ["virtomate", "domain-list"]
+    result = subprocess.run(cmd, check=True, capture_output=True)
+    domains: Sequence[DomainDescriptor] = json.loads(result.stdout)
+    return [d for d in domains if d["name"].startswith("virtomate")]
+
+
+def list_virtomate_volumes(pool: str) -> Sequence[VolumeDescriptor]:
+    cmd = ["virtomate", "volume-list", pool]
+    result = subprocess.run(cmd, check=True, text=True, capture_output=True)
+    volumes: Sequence[VolumeDescriptor] = json.loads(result.stdout)
+    return [v for v in volumes if v["name"].startswith("virtomate")]
 
 
 class TestVersionOption:
@@ -425,6 +430,38 @@ class TestDomainClone:
 
         start_domain(clone_name)
         wait_until_running(clone_name)
+
+    def test_rollback_if_disk_already_exists(
+        self, simple_uefi_machine: str, automatic_cleanup: None
+    ) -> None:
+        clone_name = "virtomate-clone-copy"
+        clone_disk_name = "virtomate-clone-copy-virtomate-simple-uefi"
+
+        # Create a volume with the same name that is going to be used by `domain-clone` to induce a failure during the
+        # clone process.
+        cmd = ["virsh", "vol-create-as", "default", clone_disk_name, "1"]
+        subprocess.run(cmd, check=True)
+
+        cmd = [
+            "virtomate",
+            "domain-clone",
+            simple_uefi_machine,
+            clone_name,
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 1, "domain-clone succeeded unexpectedly"
+        assert result.stdout == ""
+        # TODO: Expect proper JSON error response
+        assert result.stderr != ""
+
+        domain_names = [d["name"] for d in list_virtomate_domains()]
+        assert domain_names == [simple_uefi_machine]
+
+        vol_names_default = [v["name"] for v in list_virtomate_volumes("default")]
+        assert vol_names_default == ["virtomate-simple-uefi"]
+
+        vol_names_nvram = [v["name"] for v in list_virtomate_volumes("nvram")]
+        assert vol_names_nvram == ["virtomate-simple-uefi-efivars.fd"]
 
 
 class TestGuestPing:

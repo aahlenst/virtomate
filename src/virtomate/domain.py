@@ -465,13 +465,14 @@ class CloneOperation:
                     case CloneMode.LINKED:
                         CloneOperation._link_volume(conn, volume)
         except BaseException:
-            CloneOperation._undefine_domain(conn, self._clone_name)
-
             for fw in self._firmware_to_clone:
                 CloneOperation._delete_volume(conn, fw.clone_path)
 
             for volume in self._volumes_to_clone:
                 CloneOperation._delete_volume(conn, volume.clone_path)
+
+            # Has to happen last because domains with firmware cannot be undefined.
+            CloneOperation._undefine_domain(conn, self._clone_name)
 
             raise
 
