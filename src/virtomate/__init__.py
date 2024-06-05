@@ -114,6 +114,12 @@ def list_volumes(args: argparse.Namespace) -> int:
         return 0
 
 
+def import_volume(args: argparse.Namespace) -> int:
+    with connect(args.connection) as conn:
+        volume.import_volume(conn, args.file, args.pool)
+        return 0
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description="Automate libvirt.")
     p.add_argument(
@@ -187,6 +193,20 @@ def main() -> int:
         help="name of the pool whose volumes should be listed",
     )
     p_volume_list.set_defaults(func=list_volumes)
+
+    # volume-import
+    p_volume_import = sp.add_parser("volume-import", help="import volume into a pool")
+    p_volume_import.add_argument(
+        "file",
+        type=str,
+        help="path to the file to be imported as a volume",
+    )
+    p_volume_import.add_argument(
+        "pool",
+        type=str,
+        help="name of the pool that the volume should be imported into",
+    )
+    p_volume_import.set_defaults(func=import_volume)
 
     args = p.parse_args()
     status_code = args.func(args)

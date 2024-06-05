@@ -1,9 +1,15 @@
+import json
+import os.path
+import subprocess
 from collections.abc import Iterable
 from typing import TypedDict
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
+import libvirt
 from libvirt import virConnect
+
+_EOF_POSITION = -1
 
 
 class TargetDescriptor(TypedDict):
@@ -117,3 +123,91 @@ def _extract_backing_store(volume_tag: Element) -> BackingStoreDescriptor | None
         backing_store["format_type"] = format_tag.get("type")
 
     return backing_store
+
+
+def import_volume(conn: virConnect, path: str, pool_name: str) -> None:
+    cmd = ["qemu-img", "info", "--output=json", path]
+    result = subprocess.run(cmd, text=True, capture_output=True)
+    if result.returncode != 0:
+        # TODO: Custom exception
+        raise Exception
+
+    volume_info = json.loads(result.stdout)
+    if "format" not in volume_info:
+        # TODO: Custom exception
+        raise Exception
+
+    volume_tag = ElementTree.Element("volume")
+    name_tag = ElementTree.SubElement(volume_tag, "name")
+    name_tag.text = os.path.basename(path)
+    capacity_tag = ElementTree.SubElement(volume_tag, "capacity", {"unit": "bytes"})
+    # Volume will be resized automatically during upload. A size of 0 ensures that a sparse volume stays sparse.
+    capacity_tag.text = "0"
+    volume_xml = ElementTree.tostring(volume_tag, encoding="unicode")
+
+    pool = conn.storagePoolLookupByName(pool_name)
+    volume = pool.createXML(volume_xml, 0)
+    stream = conn.newStream(0)
+    try:
+        offset = 0
+        length = 0  # read entire file
+        volume.upload(
+            stream, offset, length, libvirt.VIR_STORAGE_VOL_UPLOAD_SPARSE_STREAM
+        )
+
+        with open(path, mode="rb") as f:
+            # To make sense of all the callbacks and their logic, see
+            # https://libvirt.org/html/libvirt-libvirt-stream.html#virStreamSparseSendAll
+            #
+            # There is also example code in Python on
+            # https://gitlab.com/libvirt/libvirt-python/-/blob/master/examples/sparsestream.py
+            stream.sparseSendAll(_read_source, _determine_hole, _skip_hole, f.fileno())
+
+        stream.finish()
+    except BaseException:
+        stream.abort()
+
+        raise
+
+
+def _read_source(_stream: libvirt.virStream, nbytes: int, fd: int) -> bytes:
+    return os.read(fd, nbytes)
+
+
+def _determine_hole(_stream: libvirt.virStream, fd: int) -> tuple[bool, int]:
+    current_position = os.lseek(fd, 0, os.SEEK_CUR)
+
+    try:
+        data_position = os.lseek(fd, current_position, os.SEEK_DATA)
+    except OSError as e:
+        # Error 6 is "No such device or address". This means we have reached the end of the file.
+        if e.errno == 6:
+            data_position = _EOF_POSITION
+        else:
+            raise
+
+    if current_position < data_position:
+        in_data = False
+        offset = data_position - current_position
+    elif data_position == _EOF_POSITION:
+        in_data = False
+        offset = os.lseek(fd, 0, os.SEEK_END) - current_position
+    else:
+        in_data = True
+        next_hole_position = os.lseek(fd, data_position, os.SEEK_HOLE)
+        assert next_hole_position > 0, "No trailing hole"
+        offset = next_hole_position - data_position
+
+    # Reset position in file
+    os.lseek(fd, current_position, os.SEEK_SET)
+
+    assert offset >= 0, "Next position is behind current position"
+
+    return (
+        in_data,
+        offset,
+    )
+
+
+def _skip_hole(_stream: libvirt.virStream, nbytes: int, fd: int) -> int:
+    return os.lseek(fd, nbytes, os.SEEK_CUR)

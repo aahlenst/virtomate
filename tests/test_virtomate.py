@@ -1,6 +1,9 @@
 import json
 import logging
 import os
+import pathlib
+import random
+import string
 import subprocess
 from collections.abc import Sequence
 from xml.etree import ElementTree
@@ -554,4 +557,158 @@ class TestVolumeList:
                 },
                 "backing_store": None,
             },
+        ]
+
+
+class TestVolumeUpload:
+    def test_error_if_volume_does_not_exist(
+        self, tmp_path: pathlib.Path, automatic_cleanup: None
+    ) -> None:
+        volume_name = "virtomate-raw-" + "".join(
+            random.choices(string.ascii_letters, k=10)
+        )
+        volume_path = tmp_path.joinpath(volume_name)
+
+        volumes = list_virtomate_volumes("default")
+        assert volumes == []
+
+        cmd = ["virtomate", "volume-import", str(volume_path), "default"]
+        result = subprocess.run(cmd, text=True, capture_output=True)
+        assert result.returncode == 1
+        assert result.stdout == ""
+        # TODO: Expect proper JSON error
+        assert result.stderr != ""
+
+        # Ensure that there are no leftovers.
+        volumes = list_virtomate_volumes("default")
+        assert volumes == []
+
+    def test_error_if_volume_already_exists(
+        self, tmp_path: pathlib.Path, automatic_cleanup: None
+    ) -> None:
+        volume_name = "virtomate-raw-" + "".join(
+            random.choices(string.ascii_letters, k=10)
+        )
+        volume_path = tmp_path.joinpath(volume_name)
+
+        cmd = ["qemu-img", "create", "-f", "raw", str(volume_path), "1G"]
+        subprocess.run(cmd, check=True)
+
+        # Create a volume with the same name as the one we are going to import to induce a collision.
+        cmd = ["virsh", "vol-create-as", "default", volume_name, "0"]
+        subprocess.run(cmd, check=True)
+
+        volumes = list_virtomate_volumes("default")
+        assert volumes == [
+            {
+                "allocation": 0,
+                "backing_store": None,
+                "capacity": 0,
+                "key": "/var/lib/libvirt/images/" + volume_name,
+                "name": volume_name,
+                "physical": None,
+                "target": {
+                    "format_type": "raw",
+                    "path": "/var/lib/libvirt/images/" + volume_name,
+                },
+                "type": "file",
+            }
+        ]
+
+        cmd = ["virtomate", "volume-import", str(volume_path), "default"]
+        result = subprocess.run(cmd, text=True, capture_output=True)
+        assert result.returncode == 1
+        assert result.stdout == ""
+        # TODO: Expect proper JSON error
+        assert result.stderr != ""
+
+        # Ensure that the original volume is still there and has not been tampered with.
+        volumes = list_virtomate_volumes("default")
+        assert volumes == [
+            {
+                "allocation": 0,
+                "backing_store": None,
+                "capacity": 0,
+                "key": "/var/lib/libvirt/images/" + volume_name,
+                "name": volume_name,
+                "physical": None,
+                "target": {
+                    "format_type": "raw",
+                    "path": "/var/lib/libvirt/images/" + volume_name,
+                },
+                "type": "file",
+            }
+        ]
+
+    def test_import_qcow2(
+        self, tmp_path: pathlib.Path, automatic_cleanup: None
+    ) -> None:
+        volume_name = "virtomate-qcow2-" + "".join(
+            random.choices(string.ascii_letters, k=10)
+        )
+        volume_path = tmp_path.joinpath(volume_name)
+
+        cmd = ["qemu-img", "create", "-f", "qcow2", str(volume_path), "1G"]
+        subprocess.run(cmd, check=True)
+
+        volumes = list_virtomate_volumes("default")
+        assert volumes == []
+
+        cmd = ["virtomate", "volume-import", str(volume_path), "default"]
+        result = subprocess.run(cmd, text=True, capture_output=True)
+        assert result.returncode == 0
+        assert result.stdout == ""
+        assert result.stderr == ""
+
+        volumes = list_virtomate_volumes("default")
+        assert volumes == [
+            {
+                "allocation": 200704,
+                "backing_store": None,
+                "capacity": 1073741824,
+                "key": "/var/lib/libvirt/images/" + volume_name,
+                "name": volume_name,
+                "physical": 196624,
+                "target": {
+                    "format_type": "qcow2",
+                    "path": "/var/lib/libvirt/images/" + volume_name,
+                },
+                "type": "file",
+            }
+        ]
+
+    def test_import_raw(self, tmp_path: pathlib.Path, automatic_cleanup: None) -> None:
+        volume_name = "virtomate-raw-" + "".join(
+            random.choices(string.ascii_letters, k=10)
+        )
+        volume_path = tmp_path.joinpath(volume_name)
+
+        # Volume is sparse by default. Disk size is only a couple of kilobytes.
+        cmd = ["qemu-img", "create", "-f", "raw", str(volume_path), "1G"]
+        subprocess.run(cmd, check=True)
+
+        volumes = list_virtomate_volumes("default")
+        assert volumes == []
+
+        cmd = ["virtomate", "volume-import", str(volume_path), "default"]
+        result = subprocess.run(cmd, text=True, capture_output=True)
+        assert result.returncode == 0
+        assert result.stdout == ""
+        assert result.stderr == ""
+
+        volumes = list_virtomate_volumes("default")
+        assert volumes == [
+            {
+                "allocation": 4096,
+                "backing_store": None,
+                "capacity": 1073741824,
+                "key": "/var/lib/libvirt/images/" + volume_name,
+                "name": volume_name,
+                "physical": 1073741824,
+                "target": {
+                    "format_type": "raw",
+                    "path": "/var/lib/libvirt/images/" + volume_name,
+                },
+                "type": "file",
+            }
         ]
