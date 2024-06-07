@@ -575,9 +575,36 @@ class TestVolumeUpload:
         cmd = ["virtomate", "volume-import", str(volume_path), "default"]
         result = subprocess.run(cmd, text=True, capture_output=True)
         assert result.returncode == 1
-        assert result.stdout == ""
-        # TODO: Expect proper JSON error
-        assert result.stderr != ""
+        assert json.loads(result.stdout) == {
+            "type": "FileNotFoundError",
+            "message": "File '%s' does not exist" % volume_path,
+        }
+        assert result.stderr == ""
+
+        # Ensure that there are no leftovers.
+        volumes = list_virtomate_volumes("default")
+        assert volumes == []
+
+    def test_error_if_volume_is_not_a_file(
+        self, tmp_path: pathlib.Path, automatic_cleanup: None
+    ) -> None:
+        volume_name = "virtomate-raw-" + "".join(
+            random.choices(string.ascii_letters, k=10)
+        )
+        volume_path = tmp_path.joinpath(volume_name)
+        volume_path.mkdir()
+
+        volumes = list_virtomate_volumes("default")
+        assert volumes == []
+
+        cmd = ["virtomate", "volume-import", str(volume_path), "default"]
+        result = subprocess.run(cmd, text=True, capture_output=True)
+        assert result.returncode == 1
+        assert json.loads(result.stdout) == {
+            "type": "ValueError",
+            "message": "Cannot import '%s' because it is not a file" % volume_path,
+        }
+        assert result.stderr == ""
 
         # Ensure that there are no leftovers.
         volumes = list_virtomate_volumes("default")
@@ -618,9 +645,12 @@ class TestVolumeUpload:
         cmd = ["virtomate", "volume-import", str(volume_path), "default"]
         result = subprocess.run(cmd, text=True, capture_output=True)
         assert result.returncode == 1
-        assert result.stdout == ""
-        # TODO: Expect proper JSON error
-        assert result.stderr != ""
+        assert json.loads(result.stdout) == {
+            "type": "Conflict",
+            "message": "Volume '%(volume)s' already exists in pool '%(pool)s'"
+            % {"volume": volume_name, "pool": "default"},
+        }
+        assert result.stderr == ""
 
         # Ensure that the original volume is still there and has not been tampered with.
         volumes = list_virtomate_volumes("default")

@@ -2,7 +2,7 @@ import libvirt
 import pytest
 from libvirt import virConnect
 
-from virtomate.volume import list_volumes
+from virtomate.volume import list_volumes, volume_exists
 
 
 class TestListVolumes:
@@ -78,3 +78,22 @@ class TestListVolumes:
                 "type": "file",
             },
         ]
+
+
+class TestVolumeExists:
+    def test(self, test_connection: virConnect) -> None:
+        vol_xml = """
+        <volume>
+            <name>test-volume</name>
+            <capacity>0</capacity>
+            <target>
+                <format type='qcow2'/>
+            </target>
+        </volume>
+        """
+        pool = test_connection.storagePoolLookupByName("default-pool")
+        pool.createXML(vol_xml, 0)
+
+        assert volume_exists(test_connection, "default-pool", "test-volume") is True
+        assert volume_exists(test_connection, "default-pool", "does-not-exist") is False
+        assert volume_exists(test_connection, "does-not-exist", "test-volume") is False

@@ -9,6 +9,9 @@ from xml.etree.ElementTree import Element
 import libvirt
 from libvirt import virConnect
 
+from virtomate.error import ProgramError, Conflict, NotFoundError
+from virtomate.pool import pool_exists
+
 _EOF_POSITION = -1
 
 
@@ -125,21 +128,63 @@ def _extract_backing_store(volume_tag: Element) -> BackingStoreDescriptor | None
     return backing_store
 
 
-def import_volume(conn: virConnect, path: str, pool_name: str) -> None:
-    cmd = ["qemu-img", "info", "--output=json", path]
-    result = subprocess.run(cmd, text=True, capture_output=True)
-    if result.returncode != 0:
-        # TODO: Custom exception
-        raise Exception
+def import_volume(conn: virConnect, file: str, pool_name: str) -> None:
+    """Import ``file`` on the local machine into the libvirt pool named ``pool_name``. The resulting volume will have
+    the same name as the file to import. Raises :py:class:`virtomate.error.Conflict` if a volume with the same name
+    already exists.
+
+    The format of the volume to be imported is determined with the help of the `QEMU Disk Image Utility`_
+    (``qemu-img``).
+
+    Args:
+        conn: libvirt connection
+        file: file to import on the local host
+        pool_name: name of the libvirt storage pool where the file should be imported into
+
+    Raises:
+        FileNotFoundError: if the file to import does not exist
+        ValueError: if the file to import is ot a file
+        virtomate.error.NotFoundError: if the pool does not exist
+        virtomate.error.Conflict: if a volume with the same name already exists in the pool
+        virtomate.error.ProgramError: if ``qemu-img`` cannot determine the format of the file to import
+        libvirt.libvirtError: if libvirt encounters a problem while importing the volume
+
+    .. _QEMU Disk Image Utility:
+       https://www.qemu.org/docs/master/tools/qemu-img.html
+    """
+    if not os.path.exists(file):
+        raise FileNotFoundError("File '%(file)s' does not exist" % {"file": file})
+
+    if not os.path.isfile(file):
+        raise ValueError(
+            "Cannot import '%(file)s' because it is not a file" % {"file": file}
+        )
+
+    if not pool_exists(conn, pool_name):
+        raise NotFoundError("Pool '%(pool)s' does not exist" % {"pool": pool_name})
+
+    volume_name = os.path.basename(file)
+    if volume_exists(conn, pool_name, volume_name):
+        raise Conflict(
+            "Volume '%(volume)s' already exists in pool '%(pool)s'"
+            % {"pool": pool_name, "volume": volume_name}
+        )
+
+    cmd = ["qemu-img", "info", "--output=json", file]
+    try:
+        result = subprocess.run(cmd, capture_output=True, check=True, text=True)
+    except BaseException as ex:
+        raise ProgramError("Failed to examine file '%(file)s'" % {"file": file}) from ex
 
     volume_info = json.loads(result.stdout)
-    if "format" not in volume_info:
-        # TODO: Custom exception
-        raise Exception
+    assert "format" in volume_info, (
+        "qemu-img did not report the format of the file '%(file)s' to import"
+        % {"file": file}
+    )
 
     volume_tag = ElementTree.Element("volume")
     name_tag = ElementTree.SubElement(volume_tag, "name")
-    name_tag.text = os.path.basename(path)
+    name_tag.text = os.path.basename(file)
     capacity_tag = ElementTree.SubElement(volume_tag, "capacity", {"unit": "bytes"})
     # Volume will be resized automatically during upload. A size of 0 ensures that a sparse volume stays sparse.
     capacity_tag.text = "0"
@@ -155,7 +200,7 @@ def import_volume(conn: virConnect, path: str, pool_name: str) -> None:
             stream, offset, length, libvirt.VIR_STORAGE_VOL_UPLOAD_SPARSE_STREAM
         )
 
-        with open(path, mode="rb") as f:
+        with open(file, mode="rb") as f:
             # To make sense of all the callbacks and their logic, see
             # https://libvirt.org/html/libvirt-libvirt-stream.html#virStreamSparseSendAll
             #
@@ -211,3 +256,14 @@ def _determine_hole(_stream: libvirt.virStream, fd: int) -> tuple[bool, int]:
 
 def _skip_hole(_stream: libvirt.virStream, nbytes: int, fd: int) -> int:
     return os.lseek(fd, nbytes, os.SEEK_CUR)
+
+
+def volume_exists(conn: virConnect, pool_name: str, volume_name: str) -> bool:
+    """Return ``True`` if a volume with the given name exists in the pool named `pool_name`. Return ``False`` in all
+    other cases."""
+    try:
+        pool = conn.storagePoolLookupByName(pool_name)
+        pool.storageVolLookupByName(volume_name)
+        return True
+    except libvirt.libvirtError:
+        return False

@@ -2,8 +2,11 @@ import argparse
 import importlib.metadata
 import json
 import logging
+import sys
+import typing
 from collections.abc import Iterator
 from contextlib import contextmanager
+from typing import TypedDict
 
 import libvirt
 from libvirt import virConnect
@@ -21,6 +24,11 @@ def libvirt_error_handler(ctx, error):  # type: ignore
 
 
 libvirt.registerErrorHandler(f=libvirt_error_handler, ctx=None)
+
+
+class ErrorMessage(TypedDict):
+    type: str
+    message: str | None
 
 
 @contextmanager
@@ -115,9 +123,27 @@ def list_volumes(args: argparse.Namespace) -> int:
 
 
 def import_volume(args: argparse.Namespace) -> int:
-    with connect(args.connection) as conn:
-        volume.import_volume(conn, args.file, args.pool)
-        return 0
+    try:
+        with connect(args.connection) as conn:
+            volume.import_volume(conn, args.file, args.pool)
+            return 0
+    except BaseException as ex:
+        return _handle_exception(ex)
+
+
+def _handle_exception(ex: BaseException, output: typing.IO[str] = sys.stdout) -> int:
+    """Handle the given exception by converting it into JSON and printing it to ``output``.
+
+    Args:
+        ex: exception to handle
+        output: file-like object the exception will be written to
+
+    Returns:
+        exit code to be passed to :py:func:`sys.exit`
+    """
+    message: ErrorMessage = {"type": ex.__class__.__name__, "message": str(ex)}
+    json.dump(message, output)
+    return 1
 
 
 def main() -> int:
