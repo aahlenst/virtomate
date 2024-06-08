@@ -260,7 +260,16 @@ def _skip_hole(_stream: libvirt.virStream, nbytes: int, fd: int) -> int:
 
 def volume_exists(conn: virConnect, pool_name: str, volume_name: str) -> bool:
     """Return ``True`` if a volume with the given name exists in the pool named `pool_name`. Return ``False`` in all
-    other cases."""
+    other cases.
+
+    Args:
+        conn: libvirt connection
+        pool_name: Name of the storage pool that should contain the volume
+        volume_name: Name of the volume whose existence should be tested
+
+    Returns:
+        ``True`` if the volume exists in the storage pool, ``False`` otherwise.
+    """
     try:
         pool = conn.storagePoolLookupByName(pool_name)
         pool.storageVolLookupByName(volume_name)
