@@ -123,12 +123,9 @@ def list_volumes(args: argparse.Namespace) -> int:
 
 
 def import_volume(args: argparse.Namespace) -> int:
-    try:
-        with connect(args.connection) as conn:
-            volume.import_volume(conn, args.file, args.pool)
-            return 0
-    except BaseException as ex:
-        return _handle_exception(ex)
+    with connect(args.connection) as conn:
+        volume.import_volume(conn, args.file, args.pool)
+        return 0
 
 
 def _handle_exception(ex: BaseException, output: typing.IO[str] = sys.stdout) -> int:
@@ -235,7 +232,10 @@ def main() -> int:
     p_volume_import.set_defaults(func=import_volume)
 
     args = p.parse_args()
-    status_code = args.func(args)
+    try:
+        status_code = args.func(args)
+    except BaseException as ex:
+        status_code = _handle_exception(ex, sys.stdout)
 
     # Ensure that all functions return a status code. This also helps mypy to narrow the type from Any.
     assert isinstance(status_code, int)

@@ -2,7 +2,6 @@ from random import Random
 from uuid import UUID
 from xml.etree import ElementTree
 
-import libvirt
 import pytest
 from libvirt import virConnect
 
@@ -21,6 +20,7 @@ from virtomate.domain import (
     MACFactory,
     UUIDFactory,
 )
+from virtomate.error import NotFoundError, IllegalStateError
 
 
 class TestListDomains:
@@ -75,7 +75,7 @@ class TestListDomains:
 
 class TestListDomainInterfaces:
     def test_error_if_domain_not_defined(self, test_connection: virConnect) -> None:
-        with pytest.raises(libvirt.libvirtError, match="Domain not found"):
+        with pytest.raises(NotFoundError, match="Domain 'unknown' does not exist"):
             list_domain_interfaces(test_connection, "unknown", AddressSource.AGENT)
 
     def test_source_lease(self, test_connection: virConnect) -> None:
@@ -117,7 +117,7 @@ class TestListDomainInterfaces:
         domain = test_connection.lookupByName("test")
         domain.shutdown()
 
-        with pytest.raises(libvirt.libvirtError, match="domain is not running"):
+        with pytest.raises(IllegalStateError, match="Domain 'test' is not running"):
             list_domain_interfaces(test_connection, "test", AddressSource.AGENT)
 
 

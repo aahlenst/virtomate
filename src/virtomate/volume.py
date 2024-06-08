@@ -37,7 +37,8 @@ class VolumeDescriptor(TypedDict):
 
 
 def list_volumes(conn: virConnect, pool_name: str) -> Iterable[VolumeDescriptor]:
-    """List the volumes of a storage pool.
+    """List the volumes of the storage pool ``pool_name``. Raises :py:class:`virtomate.error.NotFoundError` if the
+    storage pool does not exist.
 
     Args:
         conn: libvirt connection
@@ -46,6 +47,10 @@ def list_volumes(conn: virConnect, pool_name: str) -> Iterable[VolumeDescriptor]
     Returns:
         List of volumes
     """
+
+    if not pool_exists(conn, pool_name):
+        raise NotFoundError("Pool '%(pool)s' does not exist" % {"pool": pool_name})
+
     volumes = []
     pool = conn.storagePoolLookupByName(pool_name)
     for volume in pool.listAllVolumes(0):

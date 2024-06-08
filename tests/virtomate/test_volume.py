@@ -1,7 +1,7 @@
-import libvirt
 import pytest
 from libvirt import virConnect
 
+from virtomate.error import NotFoundError
 from virtomate.volume import list_volumes, volume_exists
 
 
@@ -10,13 +10,10 @@ class TestListVolumes:
         assert list_volumes(test_connection, "default-pool") == []
 
     def test_list_volumes_nonexistent_pool(self, test_connection: virConnect) -> None:
-        with pytest.raises(libvirt.libvirtError) as ex:
+        with pytest.raises(NotFoundError) as ex:
             list_volumes(test_connection, "does-not-exist")
 
-        assert (
-            str(ex.value)
-            == "Storage pool not found: no storage pool with matching name 'does-not-exist'"
-        )
+        assert str(ex.value) == "Pool 'does-not-exist' does not exist"
 
     def test_list_volumes(self, test_connection: virConnect) -> None:
         raw_volume_xml = """

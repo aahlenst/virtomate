@@ -4,20 +4,31 @@ import libvirt
 import libvirt_qemu
 from libvirt import virConnect
 
+from virtomate.error import NotFoundError
+
 
 def ping_guest(conn: virConnect, domain_name: str) -> bool:
-    """Ping the QEMU Guest Agent of a domain.
+    """Ping the QEMU Guest Agent of a domain. Return ``True`` if the QEMU Guest Agent responded, ``False`` otherwise.
 
     Args:
         conn: libvirt connection
-        domain_name: name of the domain to ping
+        domain_name: Name of the domain to ping
 
     Returns:
-        `True` if the QEMU Guest Agent responded, `False` otherwise.
+        ``True`` if the QEMU Guest Agent responded, ``False`` otherwise.
+
+    Raises:
+        virtomate.error.NotFoundError: if the domain does not exist
     """
-    # TODO: Reconsider error handling. If the domain does not exist, libvirt will raise an error. Do we want to check
-    #  the existence of the domain ourselves and raise our own error or leave it to libvirt?
-    domain = conn.lookupByName(domain_name)
+    # Convert the potential libvirt error in one of virtomate's exceptions because the domain lookup doubles as argument
+    # validation which is virtomate's responsibility.
+    try:
+        domain = conn.lookupByName(domain_name)
+    except libvirt.libvirtError as ex:
+        raise NotFoundError(
+            "Domain '%(domain)s' does not exist" % {"domain": domain_name}
+        ) from ex
+
     cmd = {"execute": "guest-ping"}
     json_cmd = json.dumps(cmd)
     try:

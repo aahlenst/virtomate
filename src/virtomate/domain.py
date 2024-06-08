@@ -14,6 +14,8 @@ from xml.etree.ElementTree import Element
 import libvirt
 from libvirt import virConnect
 
+from virtomate.error import NotFoundError, IllegalStateError, Conflict
+
 logger = logging.getLogger(__name__)
 
 # Maps virDomainState to a human-readable string.
@@ -80,6 +82,17 @@ class CloneMode(Enum):
 
 
 def list_domains(conn: virConnect) -> Sequence[DomainDescriptor]:
+    """Return a list of all domains.
+
+    Args:
+        conn: libvirt connection
+
+    Returns:
+        List of all domains
+
+    Raises:
+        libvirt.libvirtError: if a libvirt operation fails
+    """
     domains = conn.listAllDomains()
     mapped_domains: List[DomainDescriptor] = []
     for domain in domains:
@@ -102,8 +115,37 @@ def list_domains(conn: virConnect) -> Sequence[DomainDescriptor]:
 def list_domain_interfaces(
     conn: virConnect, domain_name: str, source: AddressSource
 ) -> Sequence[InterfaceDescriptor]:
-    """List all network interfaces of a domain."""
-    domain = conn.lookupByName(domain_name)
+    """List all network interfaces of a domain.
+
+    Addresses are obtained from the given ``source``. :py:class:`AddressSource.LEASE` consults libvirt's built-in DHCP
+    server. Consequently, static addresses will be absent from the results as will be addresses assigned by an external
+    DHCP server. :py:class:`AddressSource.AGENT` uses the QEMU Guest Agent to determine the addresses on the guest. This
+    is the only method that delivers a complete list of addresses, but requires the QEMU Guest Agent to be installed.
+    :py:class:`AddressSource.ARP` queries the host's ARP cache. The results returned from the ARP cache might be
+    incomplete or outdated. Furthermore, the reported network mask is always 0 because layer 2 has no notion of network
+    masks.
+
+    Args:
+        conn: libvirt connection
+        domain_name: Name of the domain whose interfaces should be listed
+        source: Source of address information
+
+    Returns:
+        List of all interfaces of a domain and their addresses
+
+    Raises:
+        virtomate.error.NotFoundError: if the domain does not exist
+        virtomate.error.IllegalStateException: if the domain is not running
+        libvirt.libvirtError: if a libvirt operation fails
+    """
+    # Convert the potential libvirt error in one of virtomate's exceptions because the domain lookup doubles as argument
+    # validation which is virtomate's responsibility.
+    try:
+        domain = conn.lookupByName(domain_name)
+    except libvirt.libvirtError as ex:
+        raise NotFoundError(
+            "Domain '%(domain)s' does not exist" % {"domain": domain_name}
+        ) from ex
 
     match source:
         case AddressSource.LEASE:
@@ -114,6 +156,11 @@ def list_domain_interfaces(
             s = libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP
         case _:
             raise AssertionError("Unknown address source: {}".format(source))
+
+    if not _domain_in_state(conn, domain_name, libvirt.VIR_DOMAIN_RUNNING):
+        raise IllegalStateError(
+            "Domain '%(domain)s' is not running" % {"domain": domain_name}
+        )
 
     interfaces = domain.interfaceAddresses(s, 0)
 
@@ -153,15 +200,32 @@ def list_domain_interfaces(
 def clone_domain(
     conn: virConnect, name: str, new_name: str, mode: CloneMode = CloneMode.COPY
 ) -> None:
+    """Clone the domain ``name`` into a domain named ``new_name``. The domain to be cloned must be shut down before it
+    can be cloned.
+
+    Args:
+        conn: libvirt connection
+        name: Name of the domain to clone
+        new_name: Name of the cloned domain
+        mode: How the domain should be cloned.
+
+    Raises:
+        virtomate.error.NotFoundError: if the domain to clone does not exist
+        virtomate.error.Conflict: if a domain with the same name as the cloned domain already exists
+        virtomate.error.IllegalStateError: if domain to be cloned is not shut down
+        libvirt.libvirtError: if a libvirt operation fails
+    """
     if not _domain_exists(conn, name):
-        raise Exception
+        raise NotFoundError("Domain '%(domain)s' does not exist" % {"domain": name})
 
     if _domain_exists(conn, new_name):
-        raise Exception
+        raise Conflict("Domain '%(domain)s' exists already" % {"domain": new_name})
 
     # Only domains that are shut off can be cloned.
     if not _domain_in_state(conn, name, libvirt.VIR_DOMAIN_SHUTOFF):
-        raise Exception
+        raise IllegalStateError(
+            "Domain '%(domain)s' must be shut off to be cloned" % {"domain": name}
+        )
 
     domain_to_clone = conn.lookupByName(name)
     domain_xml = domain_to_clone.XMLDesc()
@@ -226,8 +290,7 @@ class LibvirtMACFactory(MACFactory):
             if not self._mac_exists(generated_mac):
                 return generated_mac
 
-        # TODO: Raise custom exception
-        raise Exception
+        raise Conflict("Failed to generate an unoccupied MAC address")
 
     def _mac_exists(self, mac_address: str) -> bool:
         """Tests whether the given `mac_address` is already in use by another locally defined machine. Returns `True`
@@ -276,8 +339,7 @@ class LibvirtUUIDFactory(UUIDFactory):
             if not self._uuid_exists(uuid4):
                 return uuid4
 
-        # TODO: Raise custom exception
-        raise Exception
+        raise Conflict("Failed to generate an unoccupied UUID")
 
     def _uuid_exists(self, uuid4: UUID) -> bool:
         """Tests whether the given `uuid` is already in use by another locally defined machine. Returns `True` if it is,

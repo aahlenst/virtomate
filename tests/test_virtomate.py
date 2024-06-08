@@ -167,15 +167,27 @@ class TestDomainList:
 
 
 class TestDomainIfaceList:
+    def test_error_when_domain_does_not_exist(self) -> None:
+        cmd = ["virtomate", "domain-iface-list", "unknown"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 1, "domain-iface-list succeeded unexpectedly"
+        assert json.loads(result.stdout) == {
+            "type": "NotFoundError",
+            "message": "Domain 'unknown' does not exist",
+        }
+        assert result.stderr == ""
+
     def test_error_when_domain_off(
         self, simple_bios_machine: str, automatic_cleanup: None
     ) -> None:
         cmd = ["virtomate", "domain-iface-list", simple_bios_machine]
-        result = subprocess.run(cmd, capture_output=True)
+        result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 1, "domain-iface-list succeeded unexpectedly"
-        assert result.stdout == b""
-        # TODO: Expect proper JSON error response
-        assert result.stderr != b""
+        assert json.loads(result.stdout) == {
+            "type": "IllegalStateError",
+            "message": "Domain '%s' is not running" % simple_bios_machine,
+        }
+        assert result.stderr == ""
 
     def test_all_sources(
         self, simple_bios_machine: str, automatic_cleanup: None
@@ -186,9 +198,9 @@ class TestDomainIfaceList:
 
         # Default is lease (same as of `virsh domifaddr`)
         cmd = ["virtomate", "domain-iface-list", simple_bios_machine]
-        result = subprocess.run(cmd, capture_output=True)
+        result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "domain-iface-list failed unexpectedly"
-        assert result.stderr == b""
+        assert result.stderr == ""
 
         # As of libvirt 10.1, there can be multiple leases per hardware address if the same machine has been defined and
         # undefined multiple times. This is a problem of libvirt as shown by `virsh net-dhcp-leases default`.
@@ -209,9 +221,9 @@ class TestDomainIfaceList:
             "lease",
             simple_bios_machine,
         ]
-        result = subprocess.run(cmd, capture_output=True)
+        result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "domain-iface-list failed unexpectedly"
-        assert result.stderr == b""
+        assert result.stderr == ""
 
         interfaces = json.loads(result.stdout)
         assert interfaces == [
@@ -230,9 +242,9 @@ class TestDomainIfaceList:
             "agent",
             simple_bios_machine,
         ]
-        result = subprocess.run(cmd, capture_output=True)
+        result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "domain-iface-list failed unexpectedly"
-        assert result.stderr == b""
+        assert result.stderr == ""
 
         interfaces = json.loads(result.stdout)
         assert interfaces == [
@@ -256,9 +268,9 @@ class TestDomainIfaceList:
 
         # ARP table
         cmd = ["virtomate", "domain-iface-list", "--source", "arp", simple_bios_machine]
-        result = subprocess.run(cmd, capture_output=True)
+        result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "domain-iface-list failed unexpectedly"
-        assert result.stderr == b""
+        assert result.stderr == ""
 
         interfaces = json.loads(result.stdout)
         assert interfaces == [
@@ -271,6 +283,50 @@ class TestDomainIfaceList:
 
 
 class TestDomainClone:
+    def test_error_if_domain_to_clone_does_not_exist(
+        self, automatic_cleanup: None
+    ) -> None:
+        clone_name = "virtomate-clone-copy"
+
+        cmd = ["virtomate", "domain-clone", "does-not-exist", clone_name]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 1, "domain-clone succeeded unexpectedly"
+        assert json.loads(result.stdout) == {
+            "type": "NotFoundError",
+            "message": "Domain 'does-not-exist' does not exist",
+        }
+        assert result.stderr == ""
+
+    def test_error_if_clone_already_exists(
+        self, simple_bios_machine: str, automatic_cleanup: None
+    ) -> None:
+        cmd = ["virtomate", "domain-clone", simple_bios_machine, simple_bios_machine]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 1, "domain-clone succeeded unexpectedly"
+        assert json.loads(result.stdout) == {
+            "type": "Conflict",
+            "message": "Domain '%s' exists already" % simple_bios_machine,
+        }
+        assert result.stderr == ""
+
+    def test_error_if_original_not_shut_off(
+        self, simple_bios_machine: str, automatic_cleanup: None
+    ) -> None:
+        clone_name = "virtomate-clone-copy"
+
+        start_domain(simple_bios_machine)
+        wait_until_running(simple_bios_machine)
+
+        cmd = ["virtomate", "domain-clone", simple_bios_machine, clone_name]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 1, "domain-clone succeeded unexpectedly"
+        assert json.loads(result.stdout) == {
+            "type": "IllegalStateError",
+            "message": "Domain '%s' must be shut off to be cloned"
+            % simple_bios_machine,
+        }
+        assert result.stderr == ""
+
     def test_copy(self, simple_bios_machine: str, automatic_cleanup: None) -> None:
         clone_name = "virtomate-clone-copy"
 
@@ -454,9 +510,12 @@ class TestDomainClone:
         ]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 1, "domain-clone succeeded unexpectedly"
-        assert result.stdout == ""
-        # TODO: Expect proper JSON error response
-        assert result.stderr != ""
+        assert json.loads(result.stdout) == {
+            "type": "libvirtError",
+            "message": "internal error: storage volume name '%s' already in use."
+            % clone_disk_name,
+        }
+        assert result.stderr == ""
 
         domain_names = [d["name"] for d in list_virtomate_domains()]
         assert domain_names == [simple_uefi_machine]
@@ -473,21 +532,23 @@ class TestGuestPing:
         self, simple_bios_machine: str, automatic_cleanup: None
     ) -> None:
         cmd = ["virtomate", "guest-ping", "does-not-exist"]
-        result = subprocess.run(cmd, capture_output=True)
+        result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 1, "guest-ping succeeded unexpectedly"
-        assert result.stdout == b""
-        # TODO: Expect proper JSON error response
-        assert result.stderr != b""
+        assert json.loads(result.stdout) == {
+            "type": "NotFoundError",
+            "message": "Domain 'does-not-exist' does not exist",
+        }
+        assert result.stderr == ""
 
     def test_error_when_domain_off(
         self, simple_bios_machine: str, automatic_cleanup: None
     ) -> None:
         cmd = ["virtomate", "guest-ping", simple_bios_machine]
-        result = subprocess.run(cmd, capture_output=True)
+        result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 1, "guest-ping succeeded unexpectedly"
-        assert result.stdout == b""
         # No error because the return code already indicates that the guest could not be reached.
-        assert result.stderr == b""
+        assert result.stdout == ""
+        assert result.stderr == ""
 
     def test_guest_ping(
         self, simple_bios_machine: str, automatic_cleanup: None
@@ -507,8 +568,11 @@ class TestVolumeList:
         cmd = ["virtomate", "volume-list", "does-not-exist"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 1, "volume-list succeeded unexpectedly"
-        # TODO: Expect proper JSON response
-        assert result.stderr != ""
+        assert json.loads(result.stdout) == {
+            "type": "NotFoundError",
+            "message": "Pool 'does-not-exist' does not exist",
+        }
+        assert result.stderr == ""
 
     def test_list(self) -> None:
         cmd = ["virtomate", "volume-list", "virtomate"]

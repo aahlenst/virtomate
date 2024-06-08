@@ -15,3 +15,9 @@ class ProgramError(Exception):
     """Raised when an external program failed."""
 
     pass
+
+
+class IllegalStateError(Exception):
+    """Raised when an operation cannot be performed because an object is not in the required state."""
+
+    pass
