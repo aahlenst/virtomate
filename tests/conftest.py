@@ -145,8 +145,8 @@ def simple_bios_raw_machine() -> str:
 
 @pytest.fixture
 def automatic_cleanup() -> Generator[None, None, None]:
-    """Pytest fixture that removes all QEMU virtual machines and disks from the pools `default` and `nvram` prefixed
-    with `virtomate` after a test has completed.
+    """Pytest fixture that removes all QEMU virtual machines and disks from the pools ``default`` and ``nvram`` prefixed
+    with ``virtomate`` after a test has completed.
     """
     yield
 
