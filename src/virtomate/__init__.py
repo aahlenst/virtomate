@@ -4,7 +4,7 @@ import json
 import logging
 import sys
 import typing
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from typing import TypedDict
 
@@ -32,7 +32,7 @@ class ErrorMessage(TypedDict):
 
 
 @contextmanager
-def connect(uri: str | None = None) -> Iterator[virConnect]:
+def connect(uri: str | None = None) -> Generator[virConnect, None, None]:
     """Connect to a hypervisor using the given `uri` through libvirt. If `uri` is `None`, libvirt will use the following
     logic to determine what URI to use:
 

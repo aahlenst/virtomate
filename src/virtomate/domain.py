@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
 from random import Random
-from typing import TypedDict, List
+from typing import TypedDict
 from uuid import UUID
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
@@ -94,7 +94,7 @@ def list_domains(conn: virConnect) -> Sequence[DomainDescriptor]:
         libvirt.libvirtError: if a libvirt operation fails
     """
     domains = conn.listAllDomains()
-    mapped_domains: List[DomainDescriptor] = []
+    mapped_domains: list[DomainDescriptor] = []
     for domain in domains:
         (state, _) = domain.state()
         readable_state = "unknown"
@@ -164,9 +164,9 @@ def list_domain_interfaces(
 
     interfaces = domain.interfaceAddresses(s, 0)
 
-    result: List[InterfaceDescriptor] = []
+    result: list[InterfaceDescriptor] = []
     for name, props in interfaces.items():
-        addresses: List[AddressDescriptor] = []
+        addresses: list[AddressDescriptor] = []
         for addr in props["addrs"]:
             # https://libvirt.org/html/libvirt-libvirt-network.html#virIPAddrType
             match addr["type"]:

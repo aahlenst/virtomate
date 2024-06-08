@@ -1,5 +1,4 @@
-from collections.abc import Iterator
-from typing import Generator, List
+from collections.abc import Generator
 
 import libvirt
 import pytest
@@ -28,7 +27,7 @@ def pytest_configure(config: pytest.Config) -> None:
 
 
 def pytest_collection_modifyitems(
-    config: pytest.Config, items: List[pytest.Item]
+    config: pytest.Config, items: list[pytest.Item]
 ) -> None:
     skip_functional = pytest.mark.skip(reason="needs --functional to run")
     for item in items:
@@ -42,7 +41,7 @@ def pytest_collection_modifyitems(
 
 
 @pytest.fixture
-def test_connection() -> Iterator[libvirt.virConnect]:
+def test_connection() -> Generator[libvirt.virConnect, None, None]:
     with connect("test:///default") as conn:
         yield conn
 
