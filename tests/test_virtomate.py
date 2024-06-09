@@ -139,6 +139,13 @@ class TestLogging:
 
         assert "INFO:virtomate:Connecting to" in result.stderr
 
+    def test_error_when_level_is_invalid(self, automatic_cleanup: None) -> None:
+        cmd = ["virtomate", "--log", "invalid", "domain-list"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 2, "domain-list succeeded unexpectedly"
+        assert result.stdout == ""
+        assert "usage: virtomate" in result.stderr
+
 
 class TestVersionOption:
     def test_short_form(self, automatic_cleanup: None) -> None:
