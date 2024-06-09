@@ -179,7 +179,7 @@ def main() -> int:
         help="change the log level (default: %(default)s)",
         default=None,
     )
-    sp = p.add_subparsers(title="Subcommands")
+    sp = p.add_subparsers(title="Subcommands", required=True)
 
     # domain-list
     p_domain_list = sp.add_parser("domain-list", help="list all domains")

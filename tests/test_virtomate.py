@@ -97,6 +97,13 @@ class TestHelp:
         assert result.stdout == ""
         assert "usage: virtomate" in result.stderr
 
+    def test_missing_subcommand_raises_usage(self, automatic_cleanup: None) -> None:
+        cmd = ["virtomate"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 2, "command succeeded unexpectedly"
+        assert result.stdout == ""
+        assert "usage: virtomate" in result.stderr
+
 
 class TestLogging:
     def test_no_logging_by_default(self, automatic_cleanup: None) -> None:
