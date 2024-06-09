@@ -75,6 +75,29 @@ def list_virtomate_volumes(pool: str) -> Sequence[VolumeDescriptor]:
     return [v for v in volumes if v["name"].startswith("virtomate")]
 
 
+class TestHelp:
+    def test_short_form(self, automatic_cleanup: None) -> None:
+        cmd = ["virtomate", "-h"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 0, "help failed unexpectedly"
+        assert "usage: virtomate" in result.stdout
+        assert result.stderr == ""
+
+    def test_long_form(self, automatic_cleanup: None) -> None:
+        cmd = ["virtomate", "--help"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 0, "help failed unexpectedly"
+        assert "usage: virtomate" in result.stdout
+        assert result.stderr == ""
+
+    def test_usage_errors(self, automatic_cleanup: None) -> None:
+        cmd = ["virtomate", "unknown-command"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 2, "unknown-command succeeded unexpectedly"
+        assert result.stdout == ""
+        assert "usage: virtomate" in result.stderr
+
+
 class TestVersionOption:
     def test_short_form(self, automatic_cleanup: None) -> None:
         cmd = ["virtomate", "-v"]
