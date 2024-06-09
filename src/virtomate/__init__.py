@@ -151,7 +151,12 @@ def main() -> int:
         action="version",
         version=importlib.metadata.version("virtomate"),
     )
-    p.add_argument("-c", "--connection", help="libvirt connection URI", default=None)
+    p.add_argument(
+        "-c",
+        "--connection",
+        help="change the libvirt connection URI (default: %(default)s)",
+        default=None,
+    )
     sp = p.add_subparsers(title="Subcommands")
 
     # domain-list
