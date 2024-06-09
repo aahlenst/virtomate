@@ -15,6 +15,8 @@ from virtomate import guest, volume, domain
 from virtomate.domain import AddressSource, CloneMode
 
 logger = logging.getLogger(__name__)
+# Disable logging by default to prevent any output. Can be explicitly enabled with --log.
+logging.basicConfig(level=sys.maxsize, force=True)
 
 
 def libvirt_error_handler(ctx, error):  # type: ignore
@@ -155,7 +157,8 @@ def _configure_logging(args: argparse.Namespace) -> None:
     numeric_level = getattr(logging, args.log.upper(), None)
     if not isinstance(numeric_level, int):
         raise ValueError("Invalid log level '%(level)s'" % {"level": args.log})
-    logging.basicConfig(level=numeric_level)
+
+    logging.basicConfig(level=numeric_level, force=True)
 
 
 def main() -> int:
