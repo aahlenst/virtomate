@@ -145,6 +145,7 @@ def _handle_exception(ex: BaseException, output: typing.IO[str] = sys.stdout) ->
     Returns:
         exit code to be passed to :py:func:`sys.exit`
     """
+    logger.error("An error occurred, see exception below for details", exc_info=ex)
     message: ErrorMessage = {"type": ex.__class__.__name__, "message": str(ex)}
     json.dump(message, output)
     return 1
