@@ -65,14 +65,14 @@ def connect(uri: str | None = None) -> Generator[virConnect, None, None]:
         conn.close()
 
 
-def list_domains(args: argparse.Namespace) -> int:
+def _list_domains(args: argparse.Namespace) -> int:
     with connect(args.connection) as conn:
         result = domain.list_domains(conn)
         print(json.dumps(result))
         return 0
 
 
-def clone_domain(args: argparse.Namespace) -> int:
+def _clone_domain(args: argparse.Namespace) -> int:
     match args.mode:
         case "copy":
             mode = CloneMode.COPY
@@ -89,7 +89,7 @@ def clone_domain(args: argparse.Namespace) -> int:
         return 0
 
 
-def list_domain_interfaces(args: argparse.Namespace) -> int:
+def _list_domain_interfaces(args: argparse.Namespace) -> int:
     match args.source:
         case "lease":
             source = AddressSource.LEASE
@@ -107,7 +107,7 @@ def list_domain_interfaces(args: argparse.Namespace) -> int:
         return 0
 
 
-def ping_guest(args: argparse.Namespace) -> int:
+def _ping_guest(args: argparse.Namespace) -> int:
     with connect(args.connection) as conn:
         if guest.ping_guest(conn, args.domain):
             return 0
@@ -115,14 +115,14 @@ def ping_guest(args: argparse.Namespace) -> int:
             return 1
 
 
-def list_volumes(args: argparse.Namespace) -> int:
+def _list_volumes(args: argparse.Namespace) -> int:
     with connect(args.connection) as conn:
         result = volume.list_volumes(conn, args.pool)
         print(json.dumps(result))
         return 0
 
 
-def import_volume(args: argparse.Namespace) -> int:
+def _import_volume(args: argparse.Namespace) -> int:
     with connect(args.connection) as conn:
         volume.import_volume(conn, args.file, args.pool)
         return 0
@@ -180,7 +180,7 @@ def main() -> int:
 
     # domain-list
     p_domain_list = sp.add_parser("domain-list", help="list all domains")
-    p_domain_list.set_defaults(func=list_domains)
+    p_domain_list.set_defaults(func=_list_domains)
 
     # domain-clone
     p_domain_clone = sp.add_parser("domain-clone", help="clone a domain")
@@ -204,7 +204,7 @@ def main() -> int:
         default="copy",
         help="how disks are cloned (default: %(default)s)",
     )
-    p_domain_clone.set_defaults(func=clone_domain)
+    p_domain_clone.set_defaults(func=_clone_domain)
 
     # domain-iface-list
     p_domain_iface_list = sp.add_parser(
@@ -221,7 +221,7 @@ def main() -> int:
         default="lease",
         help="source of the addresses (default: %(default)s)",
     )
-    p_domain_iface_list.set_defaults(func=list_domain_interfaces)
+    p_domain_iface_list.set_defaults(func=_list_domain_interfaces)
 
     # guest-ping
     p_guest_ping = sp.add_parser("guest-ping", help="ping the QEMU Guest Agent")
@@ -230,7 +230,7 @@ def main() -> int:
         type=str,
         help="name of the domain to ping",
     )
-    p_guest_ping.set_defaults(func=ping_guest)
+    p_guest_ping.set_defaults(func=_ping_guest)
 
     # volume-list
     p_volume_list = sp.add_parser("volume-list", help="list volumes of a pool")
@@ -239,7 +239,7 @@ def main() -> int:
         type=str,
         help="name of the pool whose volumes should be listed",
     )
-    p_volume_list.set_defaults(func=list_volumes)
+    p_volume_list.set_defaults(func=_list_volumes)
 
     # volume-import
     p_volume_import = sp.add_parser("volume-import", help="import volume into a pool")
@@ -253,7 +253,7 @@ def main() -> int:
         type=str,
         help="name of the pool that the volume should be imported into",
     )
-    p_volume_import.set_defaults(func=import_volume)
+    p_volume_import.set_defaults(func=_import_volume)
 
     args = p.parse_args()
     try:
