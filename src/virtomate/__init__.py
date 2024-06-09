@@ -17,15 +17,8 @@ from virtomate.domain import AddressSource, CloneMode
 logger = logging.getLogger(__name__)
 # Disable logging by default to prevent any output. Can be explicitly enabled with --log.
 logging.basicConfig(level=sys.maxsize, force=True)
-
-
-def libvirt_error_handler(ctx, error):  # type: ignore
-    # TODO: Make it useful. Problem: Duplicates (?) contents of libvirt.libvirtError which would not be useful.
-    #  https://libvirt.gitlab.io/libvirt-appdev-guide-python/libvirt_application_development_guide_using_python-Error_Handling-Registering_Error_Handler.html
-    logger.debug("libvirt error %s", error)
-
-
-libvirt.registerErrorHandler(f=libvirt_error_handler, ctx=None)
+# Disable libvirt's default error handler because it is redundant. Every error raises a Python exception.
+libvirt.registerErrorHandler(f=lambda ctx, err: ..., ctx=None)
 
 
 class ErrorMessage(TypedDict):
