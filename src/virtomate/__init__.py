@@ -58,6 +58,11 @@ def connect(uri: str | None = None) -> Generator[virConnect, None, None]:
     .. _Connection URIs:
         https://www.python.org/dev/peps/pep-0484/
     """
+    if uri is None or uri == "":
+        logger.info("Connecting to default libvirt instance")
+    else:
+        logger.info("Connecting to libvirt instance %s", uri)
+
     conn = libvirt.open(uri)
     try:
         yield conn
@@ -143,6 +148,16 @@ def _handle_exception(ex: BaseException, output: typing.IO[str] = sys.stdout) ->
     return 1
 
 
+def _configure_logging(args: argparse.Namespace) -> None:
+    if "log" not in args or not isinstance(args.log, str):
+        return
+
+    numeric_level = getattr(logging, args.log.upper(), None)
+    if not isinstance(numeric_level, int):
+        raise ValueError("Invalid log level '%(level)s'" % {"level": args.log})
+    logging.basicConfig(level=numeric_level)
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description="Automate libvirt.")
     p.add_argument(
@@ -155,6 +170,13 @@ def main() -> int:
         "-c",
         "--connection",
         help="change the libvirt connection URI (default: %(default)s)",
+        default=None,
+    )
+    p.add_argument(
+        "-l",
+        "--log",
+        choices=("debug", "info", "warning", "error", "critical"),
+        help="change the log level (default: %(default)s)",
         default=None,
     )
     sp = p.add_subparsers(title="Subcommands")
@@ -238,6 +260,7 @@ def main() -> int:
 
     args = p.parse_args()
     try:
+        _configure_logging(args)
         status_code = args.func(args)
     except BaseException as ex:
         status_code = _handle_exception(ex, sys.stdout)

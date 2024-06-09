@@ -98,6 +98,41 @@ class TestHelp:
         assert "usage: virtomate" in result.stderr
 
 
+class TestLogging:
+    def test_no_logging_by_default(self, automatic_cleanup: None) -> None:
+        cmd = ["virtomate", "domain-list"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 0, "domain-list failed unexpectedly"
+
+        domains: Sequence[DomainDescriptor] = json.loads(result.stdout)
+        virtomate_domains = [d for d in domains if d["name"].startswith("virtomate")]
+        assert virtomate_domains == []
+
+        assert result.stderr == ""
+
+    def test_short_form(self, automatic_cleanup: None) -> None:
+        cmd = ["virtomate", "-l", "debug", "domain-list"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 0, "domain-list failed unexpectedly"
+
+        domains: Sequence[DomainDescriptor] = json.loads(result.stdout)
+        virtomate_domains = [d for d in domains if d["name"].startswith("virtomate")]
+        assert virtomate_domains == []
+
+        assert "INFO:virtomate:Connecting to" in result.stderr
+
+    def test_long_form(self, automatic_cleanup: None) -> None:
+        cmd = ["virtomate", "--log", "info", "domain-list"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 0, "domain-list failed unexpectedly"
+
+        domains: Sequence[DomainDescriptor] = json.loads(result.stdout)
+        virtomate_domains = [d for d in domains if d["name"].startswith("virtomate")]
+        assert virtomate_domains == []
+
+        assert "INFO:virtomate:Connecting to" in result.stderr
+
+
 class TestVersionOption:
     def test_short_form(self, automatic_cleanup: None) -> None:
         cmd = ["virtomate", "-v"]
