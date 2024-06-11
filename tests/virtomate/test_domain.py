@@ -19,6 +19,7 @@ from virtomate.domain import (
     SourceVolume,
     MACFactory,
     UUIDFactory,
+    domain_exists,
 )
 from virtomate.error import NotFoundError, IllegalStateError
 
@@ -314,3 +315,9 @@ class TestCloneOperation:
         assert op.clone_config() == ElementTree.tostring(
             clone_config, encoding="unicode"
         )
+
+
+class TestDomainExists:
+    def test(self, test_connection: virConnect) -> None:
+        assert domain_exists(test_connection, "test") is True
+        assert domain_exists(test_connection, "does-not-exist") is False

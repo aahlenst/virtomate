@@ -215,10 +215,10 @@ def clone_domain(
         virtomate.error.IllegalStateError: if domain to be cloned is not shut down
         libvirt.libvirtError: if a libvirt operation fails
     """
-    if not _domain_exists(conn, name):
+    if not domain_exists(conn, name):
         raise NotFoundError("Domain '%(domain)s' does not exist" % {"domain": name})
 
-    if _domain_exists(conn, new_name):
+    if domain_exists(conn, new_name):
         raise Conflict("Domain '%(domain)s' exists already" % {"domain": new_name})
 
     # Only domains that are shut off can be cloned.
@@ -237,9 +237,16 @@ def clone_domain(
     op.perform(conn)
 
 
-# TODO: Make public
-def _domain_exists(conn: virConnect, name: str) -> bool:
-    """Returns `True` if a domain with the given name exists, `False` otherwise."""
+def domain_exists(conn: virConnect, name: str) -> bool:
+    """Return ``True`` if a domain with the given name exists, ``False`` otherwise.
+
+    Args:
+        conn: libvirt connection
+        name: Name of the domain that should exist
+
+    Returns:
+        ``True`` if a domain named ``name`` exists, ``False`` otherwise
+    """
     try:
         conn.lookupByName(name)
         return True
