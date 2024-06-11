@@ -14,6 +14,7 @@ from tenacity import stop_after_attempt, wait_fixed, retry
 import importlib.metadata
 from tests.matchers import ANY_STR, ANY_INT
 from virtomate.domain import DomainDescriptor
+from virtomate.pool import PoolDescriptor
 from virtomate.volume import VolumeDescriptor
 
 logger = logging.getLogger(__name__)
@@ -633,6 +634,29 @@ class TestGuestPing:
         assert result.returncode == 0, "Could not ping {}".format(simple_bios_machine)
         assert result.stdout == b""
         assert result.stderr == b""
+
+
+class TestPoolList:
+    def test(self) -> None:
+        cmd = ["virtomate", "pool-list"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 0, "pool-list failed unexpectedly"
+        assert result.stderr == ""
+
+        pools: Sequence[PoolDescriptor] = json.loads(result.stdout)
+        virtomate_pool = next(p for p in pools if p["name"] == "virtomate")
+
+        assert virtomate_pool == {
+            "active": True,
+            "allocation": ANY_INT,
+            "available": ANY_INT,
+            "capacity": ANY_INT,
+            "name": "virtomate",
+            "number_of_volumes": ANY_INT,
+            "persistent": True,
+            "state": "running",
+            "uuid": ANY_STR,
+        }
 
 
 class TestVolumeList:

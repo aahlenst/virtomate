@@ -18,7 +18,8 @@ pool_name="virtomate"
 # Create pool
 mkdir "$pool_home/$pool_name"
 chmod u=rwx,g=x,o=x "$pool_home/$pool_name"
-virsh pool-create-as "$pool_name" dir --target "$pool_home/$pool_name"
+virsh pool-define-as "$pool_name" dir --target "$pool_home/$pool_name"
+virsh pool-start "$pool_name"
 
 # Import volumes
 find "$image_home" -maxdepth 2 -mindepth 2 -type f -print0 | while read -d $'\0' file

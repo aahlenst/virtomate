@@ -11,7 +11,7 @@ from typing import TypedDict
 import libvirt
 from libvirt import virConnect
 
-from virtomate import guest, volume, domain
+from virtomate import guest, volume, domain, pool
 from virtomate.domain import AddressSource, CloneMode
 
 logger = logging.getLogger(__name__)
@@ -113,6 +113,13 @@ def _ping_guest(args: argparse.Namespace) -> int:
             return 0
         else:
             return 1
+
+
+def _list_pools(args: argparse.Namespace) -> int:
+    with connect(args.connection) as conn:
+        result = pool.list_pools(conn)
+        print(json.dumps(result))
+        return 0
 
 
 def _list_volumes(args: argparse.Namespace) -> int:
@@ -231,6 +238,10 @@ def main() -> int:
         help="name of the domain to ping",
     )
     p_guest_ping.set_defaults(func=_ping_guest)
+
+    # pool-list
+    p_pool_list = sp.add_parser("pool-list", help="list storage pools")
+    p_pool_list.set_defaults(func=_list_pools)
 
     # volume-list
     p_volume_list = sp.add_parser("volume-list", help="list volumes of a pool")
