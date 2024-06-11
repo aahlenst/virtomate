@@ -157,7 +157,7 @@ def list_domain_interfaces(
         case _:
             raise AssertionError("Unknown address source: {}".format(source))
 
-    if not _domain_in_state(conn, domain_name, libvirt.VIR_DOMAIN_RUNNING):
+    if not domain_in_state(conn, domain_name, libvirt.VIR_DOMAIN_RUNNING):
         raise IllegalStateError(
             "Domain '%(domain)s' is not running" % {"domain": domain_name}
         )
@@ -222,7 +222,7 @@ def clone_domain(
         raise Conflict("Domain '%(domain)s' exists already" % {"domain": new_name})
 
     # Only domains that are shut off can be cloned.
-    if not _domain_in_state(conn, name, libvirt.VIR_DOMAIN_SHUTOFF):
+    if not domain_in_state(conn, name, libvirt.VIR_DOMAIN_SHUTOFF):
         raise IllegalStateError(
             "Domain '%(domain)s' must be shut off to be cloned" % {"domain": name}
         )
@@ -254,10 +254,28 @@ def domain_exists(conn: virConnect, name: str) -> bool:
         return False
 
 
-# TODO: Make public
-def _domain_in_state(conn: virConnect, name: str, state: int) -> bool:
+def domain_in_state(conn: virConnect, name: str, state: int) -> bool:
+    """Test whether a domain is in the given state. Return ``True`` if it is, ``False`` otherwise.
+
+    Args:
+        conn: libvirt
+        name: name of the domain
+        state: state the domain should be in
+
+    Returns:
+        ``True`` if the domain is in the given state, ``False`` otherwise.
+
+    Raises:
+        virtomate.error.NotFoundError: if the domain does not exist
+    """
     try:
         domain = conn.lookupByName(name)
+    except libvirt.libvirtError as ex:
+        raise NotFoundError(
+            "Domain '%(domain)s' does not exist" % {"domain": name}
+        ) from ex
+
+    try:
         (domain_state, _) = domain.state(0)
         # bool() to placate mypy because __eq__() can return NotImplemented.
         return bool(state == domain_state)

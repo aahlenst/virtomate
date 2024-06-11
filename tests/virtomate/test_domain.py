@@ -2,6 +2,7 @@ from random import Random
 from uuid import UUID
 from xml.etree import ElementTree
 
+import libvirt
 import pytest
 from libvirt import virConnect
 
@@ -20,6 +21,7 @@ from virtomate.domain import (
     MACFactory,
     UUIDFactory,
     domain_exists,
+    domain_in_state,
 )
 from virtomate.error import NotFoundError, IllegalStateError
 
@@ -321,3 +323,18 @@ class TestDomainExists:
     def test(self, test_connection: virConnect) -> None:
         assert domain_exists(test_connection, "test") is True
         assert domain_exists(test_connection, "does-not-exist") is False
+
+
+class TestDomainInState:
+    def test_error_if_domain_does_not_exist(self, test_connection: virConnect) -> None:
+        with pytest.raises(NotFoundError) as ex:
+            domain_in_state(test_connection, "unknown", libvirt.VIR_DOMAIN_RUNNING)
+
+        assert str(ex.value) == "Domain 'unknown' does not exist"
+
+    def test_in_state(self, test_connection: virConnect) -> None:
+        from libvirt import VIR_DOMAIN_RUNNING
+        from libvirt import VIR_DOMAIN_SHUTOFF
+
+        assert domain_in_state(test_connection, "test", VIR_DOMAIN_RUNNING) is True
+        assert domain_in_state(test_connection, "test", VIR_DOMAIN_SHUTOFF) is False
