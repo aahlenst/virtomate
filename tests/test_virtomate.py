@@ -587,7 +587,7 @@ class TestDomainClone:
 
 
 class TestGuestPing:
-    def test_error_unknown_machine(self, simple_bios_vm: str) -> None:
+    def test_error_unknown_machine(self) -> None:
         cmd = ["virtomate", "guest-ping", "does-not-exist"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 1, "guest-ping succeeded unexpectedly"
@@ -605,13 +605,12 @@ class TestGuestPing:
         assert result.stdout == ""
         assert result.stderr == ""
 
-    def test_guest_ping(self, simple_bios_vm: str) -> None:
-        start_domain(simple_bios_vm)
-        wait_until_running(simple_bios_vm)
+    def test_guest_ping(self, running_vm_for_class: str) -> None:
+        wait_until_running(running_vm_for_class)
 
-        cmd = ["virtomate", "guest-ping", simple_bios_vm]
+        cmd = ["virtomate", "guest-ping", running_vm_for_class]
         result = subprocess.run(cmd, capture_output=True)
-        assert result.returncode == 0, "Could not ping {}".format(simple_bios_vm)
+        assert result.returncode == 0, "Could not ping {}".format(running_vm_for_class)
         assert result.stdout == b""
         assert result.stderr == b""
 

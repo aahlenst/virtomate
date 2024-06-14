@@ -48,7 +48,7 @@ def test_connection() -> Generator[virConnect, None, None]:
 
 
 @pytest.fixture
-def conn_for_function() -> Generator[virConnect, None, None]:
+def conn() -> Generator[virConnect, None, None]:
     with connect() as conn:
         yield conn
 
@@ -107,8 +107,8 @@ def _simple_bios_vm(conn: virConnect) -> str:
 
 
 @pytest.fixture
-def simple_bios_vm(conn_for_function: virConnect, after_function_cleanup: None) -> str:
-    return _simple_bios_vm(conn_for_function)
+def simple_bios_vm(conn: virConnect, after_function_cleanup: None) -> str:
+    return _simple_bios_vm(conn)
 
 
 @pytest.fixture(scope="class")
@@ -157,8 +157,8 @@ def _simple_uefi_vm(conn: virConnect) -> str:
 
 
 @pytest.fixture
-def simple_uefi_vm(conn_for_function: virConnect, after_function_cleanup: None) -> str:
-    return _simple_uefi_vm(conn_for_function)
+def simple_uefi_vm(conn: virConnect, after_function_cleanup: None) -> str:
+    return _simple_uefi_vm(conn)
 
 
 def _simple_bios_raw_vm(conn: virConnect) -> str:
@@ -182,18 +182,14 @@ def _simple_bios_raw_vm(conn: virConnect) -> str:
 
 
 @pytest.fixture
-def simple_bios_raw_vm(
-    conn_for_function: virConnect, after_function_cleanup: None
-) -> str:
-    return _simple_bios_raw_vm(conn_for_function)
+def simple_bios_raw_vm(conn: virConnect, after_function_cleanup: None) -> str:
+    return _simple_bios_raw_vm(conn)
 
 
 @pytest.fixture
-def after_function_cleanup(
-    conn_for_function: virConnect,
-) -> Generator[None, None, None]:
+def after_function_cleanup(conn: virConnect) -> Generator[None, None, None]:
     yield
-    _clean_up(conn_for_function)
+    _clean_up(conn)
 
 
 @pytest.fixture(scope="class")
