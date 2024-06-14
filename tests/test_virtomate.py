@@ -77,28 +77,28 @@ def list_virtomate_volumes(pool: str) -> Sequence[VolumeDescriptor]:
 
 
 class TestHelp:
-    def test_short_form(self, automatic_cleanup: None) -> None:
+    def test_short_form(self) -> None:
         cmd = ["virtomate", "-h"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "help failed unexpectedly"
         assert "usage: virtomate" in result.stdout
         assert result.stderr == ""
 
-    def test_long_form(self, automatic_cleanup: None) -> None:
+    def test_long_form(self) -> None:
         cmd = ["virtomate", "--help"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "help failed unexpectedly"
         assert "usage: virtomate" in result.stdout
         assert result.stderr == ""
 
-    def test_usage_errors(self, automatic_cleanup: None) -> None:
+    def test_usage_errors(self) -> None:
         cmd = ["virtomate", "unknown-command"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 2, "unknown-command succeeded unexpectedly"
         assert result.stdout == ""
         assert "usage: virtomate" in result.stderr
 
-    def test_missing_subcommand_raises_usage(self, automatic_cleanup: None) -> None:
+    def test_missing_subcommand_raises_usage(self) -> None:
         cmd = ["virtomate"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 2, "command succeeded unexpectedly"
@@ -107,7 +107,7 @@ class TestHelp:
 
 
 class TestLogging:
-    def test_no_logging_by_default(self, automatic_cleanup: None) -> None:
+    def test_no_logging_by_default(self) -> None:
         cmd = ["virtomate", "domain-list"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "domain-list failed unexpectedly"
@@ -118,7 +118,7 @@ class TestLogging:
 
         assert result.stderr == ""
 
-    def test_short_form(self, automatic_cleanup: None) -> None:
+    def test_short_form(self) -> None:
         cmd = ["virtomate", "-l", "debug", "domain-list"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "domain-list failed unexpectedly"
@@ -129,7 +129,7 @@ class TestLogging:
 
         assert "INFO:virtomate:Connecting to" in result.stderr
 
-    def test_long_form(self, automatic_cleanup: None) -> None:
+    def test_long_form(self) -> None:
         cmd = ["virtomate", "--log", "info", "domain-list"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "domain-list failed unexpectedly"
@@ -140,7 +140,7 @@ class TestLogging:
 
         assert "INFO:virtomate:Connecting to" in result.stderr
 
-    def test_error_when_level_is_invalid(self, automatic_cleanup: None) -> None:
+    def test_error_when_level_is_invalid(self) -> None:
         cmd = ["virtomate", "--log", "invalid", "domain-list"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 2, "domain-list succeeded unexpectedly"
@@ -149,7 +149,7 @@ class TestLogging:
 
 
 class TestVersionOption:
-    def test_short_form(self, automatic_cleanup: None) -> None:
+    def test_short_form(self) -> None:
         cmd = ["virtomate", "-v"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "version failed unexpectedly"
@@ -157,7 +157,7 @@ class TestVersionOption:
         assert result.stdout.strip() == importlib.metadata.version("virtomate")
         assert result.stderr == ""
 
-    def test_long_form(self, automatic_cleanup: None) -> None:
+    def test_long_form(self) -> None:
         cmd = ["virtomate", "--version"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "version failed unexpectedly"
@@ -167,7 +167,7 @@ class TestVersionOption:
 
 
 class TestConnectionOption:
-    def test_default(self, simple_bios_machine: str, automatic_cleanup: None) -> None:
+    def test_default(self, simple_bios_vm: str) -> None:
         cmd = ["virtomate", "domain-list"]
         result = subprocess.run(cmd, capture_output=True)
         assert result.returncode == 0, "domain-list failed unexpectedly"
@@ -175,16 +175,14 @@ class TestConnectionOption:
 
         domains = json.loads(result.stdout)
 
-        machine = next(d for d in domains if d["name"] == simple_bios_machine)
+        machine = next(d for d in domains if d["name"] == simple_bios_vm)
         assert machine == {
             "uuid": "d2ecf360-24a6-4952-95fb-68b99307d942",
-            "name": simple_bios_machine,
+            "name": simple_bios_vm,
             "state": "shut-off",
         }
 
-    def test_short_form(
-        self, simple_bios_machine: str, automatic_cleanup: None
-    ) -> None:
+    def test_short_form(self, simple_bios_vm: str) -> None:
         cmd = ["virtomate", "-c", "test:///default", "domain-list"]
         result = subprocess.run(cmd, capture_output=True)
         assert result.returncode == 0, "domain-list failed unexpectedly"
@@ -193,9 +191,9 @@ class TestConnectionOption:
         domains = json.loads(result.stdout)
 
         with pytest.raises(StopIteration):
-            next(d for d in domains if d["name"] == simple_bios_machine)
+            next(d for d in domains if d["name"] == simple_bios_vm)
 
-    def test_long_form(self, simple_bios_machine: str, automatic_cleanup: None) -> None:
+    def test_long_form(self, simple_bios_vm: str) -> None:
         cmd = ["virtomate", "--connection", "test:///default", "domain-list"]
         result = subprocess.run(cmd, capture_output=True)
         assert result.returncode == 0, "domain-list failed unexpectedly"
@@ -204,16 +202,11 @@ class TestConnectionOption:
         domains = json.loads(result.stdout)
 
         with pytest.raises(StopIteration):
-            next(d for d in domains if d["name"] == simple_bios_machine)
+            next(d for d in domains if d["name"] == simple_bios_vm)
 
 
 class TestDomainList:
-    def test_list(
-        self,
-        simple_bios_machine: str,
-        simple_uefi_machine: str,
-        automatic_cleanup: None,
-    ) -> None:
+    def test_list(self, simple_bios_vm: str, simple_uefi_vm: str) -> None:
         cmd = ["virtomate", "domain-list"]
         result = subprocess.run(cmd, capture_output=True)
         assert result.returncode == 0, "domain-list failed unexpectedly"
@@ -224,17 +217,17 @@ class TestDomainList:
         # There might be pre-existing domains.
         assert len(domains) >= 2
 
-        machine = next(d for d in domains if d["name"] == simple_bios_machine)
+        machine = next(d for d in domains if d["name"] == simple_bios_vm)
         assert machine == {
             "uuid": "d2ecf360-24a6-4952-95fb-68b99307d942",
-            "name": simple_bios_machine,
+            "name": simple_bios_vm,
             "state": "shut-off",
         }
 
-        machine = next(d for d in domains if d["name"] == simple_uefi_machine)
+        machine = next(d for d in domains if d["name"] == simple_uefi_vm)
         assert machine == {
             "uuid": "ef70b4c0-1773-44a3-9b95-f239ae97d9db",
-            "name": simple_uefi_machine,
+            "name": simple_uefi_vm,
             "state": "shut-off",
         }
 
@@ -250,27 +243,23 @@ class TestDomainIfaceList:
         }
         assert result.stderr == ""
 
-    def test_error_when_domain_off(
-        self, simple_bios_machine: str, automatic_cleanup: None
-    ) -> None:
-        cmd = ["virtomate", "domain-iface-list", simple_bios_machine]
+    def test_error_when_domain_off(self, simple_bios_vm: str) -> None:
+        cmd = ["virtomate", "domain-iface-list", simple_bios_vm]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 1, "domain-iface-list succeeded unexpectedly"
         assert json.loads(result.stdout) == {
             "type": "IllegalStateError",
-            "message": "Domain '%s' is not running" % simple_bios_machine,
+            "message": "Domain '%s' is not running" % simple_bios_vm,
         }
         assert result.stderr == ""
 
-    def test_all_sources(
-        self, simple_bios_machine: str, automatic_cleanup: None
-    ) -> None:
-        start_domain(simple_bios_machine)
-        wait_until_running(simple_bios_machine)
-        wait_for_network(simple_bios_machine)
+    def test_all_sources(self, simple_bios_vm: str) -> None:
+        start_domain(simple_bios_vm)
+        wait_until_running(simple_bios_vm)
+        wait_for_network(simple_bios_vm)
 
         # Default is lease (same as of `virsh domifaddr`)
-        cmd = ["virtomate", "domain-iface-list", simple_bios_machine]
+        cmd = ["virtomate", "domain-iface-list", simple_bios_vm]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "domain-iface-list failed unexpectedly"
         assert result.stderr == ""
@@ -292,7 +281,7 @@ class TestDomainIfaceList:
             "domain-iface-list",
             "--source",
             "lease",
-            simple_bios_machine,
+            simple_bios_vm,
         ]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "domain-iface-list failed unexpectedly"
@@ -313,7 +302,7 @@ class TestDomainIfaceList:
             "domain-iface-list",
             "--source",
             "agent",
-            simple_bios_machine,
+            simple_bios_vm,
         ]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "domain-iface-list failed unexpectedly"
@@ -340,7 +329,7 @@ class TestDomainIfaceList:
         ]
 
         # ARP table
-        cmd = ["virtomate", "domain-iface-list", "--source", "arp", simple_bios_machine]
+        cmd = ["virtomate", "domain-iface-list", "--source", "arp", simple_bios_vm]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "domain-iface-list failed unexpectedly"
         assert result.stderr == ""
@@ -356,9 +345,7 @@ class TestDomainIfaceList:
 
 
 class TestDomainClone:
-    def test_error_if_domain_to_clone_does_not_exist(
-        self, automatic_cleanup: None
-    ) -> None:
+    def test_error_if_domain_to_clone_does_not_exist(self) -> None:
         clone_name = "virtomate-clone-copy"
 
         cmd = ["virtomate", "domain-clone", "does-not-exist", clone_name]
@@ -370,40 +357,35 @@ class TestDomainClone:
         }
         assert result.stderr == ""
 
-    def test_error_if_clone_already_exists(
-        self, simple_bios_machine: str, automatic_cleanup: None
-    ) -> None:
-        cmd = ["virtomate", "domain-clone", simple_bios_machine, simple_bios_machine]
+    def test_error_if_clone_already_exists(self, simple_bios_vm: str) -> None:
+        cmd = ["virtomate", "domain-clone", simple_bios_vm, simple_bios_vm]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 1, "domain-clone succeeded unexpectedly"
         assert json.loads(result.stdout) == {
             "type": "Conflict",
-            "message": "Domain '%s' exists already" % simple_bios_machine,
+            "message": "Domain '%s' exists already" % simple_bios_vm,
         }
         assert result.stderr == ""
 
-    def test_error_if_original_not_shut_off(
-        self, simple_bios_machine: str, automatic_cleanup: None
-    ) -> None:
+    def test_error_if_original_not_shut_off(self, simple_bios_vm: str) -> None:
         clone_name = "virtomate-clone-copy"
 
-        start_domain(simple_bios_machine)
-        wait_until_running(simple_bios_machine)
+        start_domain(simple_bios_vm)
+        wait_until_running(simple_bios_vm)
 
-        cmd = ["virtomate", "domain-clone", simple_bios_machine, clone_name]
+        cmd = ["virtomate", "domain-clone", simple_bios_vm, clone_name]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 1, "domain-clone succeeded unexpectedly"
         assert json.loads(result.stdout) == {
             "type": "IllegalStateError",
-            "message": "Domain '%s' must be shut off to be cloned"
-            % simple_bios_machine,
+            "message": "Domain '%s' must be shut off to be cloned" % simple_bios_vm,
         }
         assert result.stderr == ""
 
-    def test_copy(self, simple_bios_machine: str, automatic_cleanup: None) -> None:
+    def test_copy(self, simple_bios_vm: str) -> None:
         clone_name = "virtomate-clone-copy"
 
-        cmd = ["virtomate", "domain-clone", simple_bios_machine, clone_name]
+        cmd = ["virtomate", "domain-clone", simple_bios_vm, clone_name]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "domain-clone failed unexpectedly"
         assert result.stdout == ""
@@ -420,9 +402,7 @@ class TestDomainClone:
         start_domain(clone_name)
         wait_until_running(clone_name)
 
-    def test_linked_with_qcow2_backing_store(
-        self, simple_bios_machine: str, automatic_cleanup: None
-    ) -> None:
+    def test_linked_with_qcow2_backing_store(self, simple_bios_vm: str) -> None:
         clone_name = "virtomate-clone-linked"
 
         cmd = [
@@ -430,7 +410,7 @@ class TestDomainClone:
             "domain-clone",
             "--mode",
             "linked",
-            simple_bios_machine,
+            simple_bios_vm,
             clone_name,
         ]
         result = subprocess.run(cmd, capture_output=True, text=True)
@@ -455,9 +435,7 @@ class TestDomainClone:
         start_domain(clone_name)
         wait_until_running(clone_name)
 
-    def test_linked_with_raw_backing_store(
-        self, simple_bios_raw_machine: str, automatic_cleanup: None
-    ) -> None:
+    def test_linked_with_raw_backing_store(self, simple_bios_raw_vm: str) -> None:
         clone_name = "virtomate-clone-linked"
 
         cmd = [
@@ -465,7 +443,7 @@ class TestDomainClone:
             "domain-clone",
             "--mode",
             "linked",
-            simple_bios_raw_machine,
+            simple_bios_raw_vm,
             clone_name,
         ]
         result = subprocess.run(cmd, capture_output=True, text=True)
@@ -490,9 +468,7 @@ class TestDomainClone:
         start_domain(clone_name)
         wait_until_running(clone_name)
 
-    def test_linked_with_copied_firmware(
-        self, simple_uefi_machine: str, automatic_cleanup: None
-    ) -> None:
+    def test_linked_with_copied_firmware(self, simple_uefi_vm: str) -> None:
         clone_name = "virtomate-clone-linked"
 
         cmd = [
@@ -500,7 +476,7 @@ class TestDomainClone:
             "domain-clone",
             "--mode",
             "linked",
-            simple_uefi_machine,
+            simple_uefi_vm,
             clone_name,
         ]
         result = subprocess.run(cmd, capture_output=True, text=True)
@@ -534,9 +510,7 @@ class TestDomainClone:
         wait_until_running(clone_name)
 
     @pytest.mark.reflink
-    def test_reflink_copy(
-        self, simple_bios_raw_machine: str, automatic_cleanup: None
-    ) -> None:
+    def test_reflink_copy(self, simple_bios_raw_vm: str) -> None:
         clone_name = "virtomate-clone-reflink"
 
         cmd = [
@@ -544,7 +518,7 @@ class TestDomainClone:
             "domain-clone",
             "--mode",
             "reflink",
-            simple_bios_raw_machine,
+            simple_bios_raw_vm,
             clone_name,
         ]
         result = subprocess.run(cmd, capture_output=True, text=True)
@@ -564,9 +538,7 @@ class TestDomainClone:
         start_domain(clone_name)
         wait_until_running(clone_name)
 
-    def test_rollback_if_disk_already_exists(
-        self, simple_uefi_machine: str, automatic_cleanup: None
-    ) -> None:
+    def test_rollback_if_disk_already_exists(self, simple_uefi_vm: str) -> None:
         clone_name = "virtomate-clone-copy"
         clone_disk_name = "virtomate-clone-copy-virtomate-simple-uefi"
 
@@ -578,7 +550,7 @@ class TestDomainClone:
         cmd = [
             "virtomate",
             "domain-clone",
-            simple_uefi_machine,
+            simple_uefi_vm,
             clone_name,
         ]
         result = subprocess.run(cmd, capture_output=True, text=True)
@@ -591,7 +563,7 @@ class TestDomainClone:
         assert result.stderr == ""
 
         domain_names = [d["name"] for d in list_virtomate_domains()]
-        assert domain_names == [simple_uefi_machine]
+        assert domain_names == [simple_uefi_vm]
 
         vol_names_default = [v["name"] for v in list_virtomate_volumes("default")]
         assert vol_names_default == ["virtomate-simple-uefi"]
@@ -601,9 +573,7 @@ class TestDomainClone:
 
 
 class TestGuestPing:
-    def test_error_unknown_machine(
-        self, simple_bios_machine: str, automatic_cleanup: None
-    ) -> None:
+    def test_error_unknown_machine(self, simple_bios_vm: str) -> None:
         cmd = ["virtomate", "guest-ping", "does-not-exist"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 1, "guest-ping succeeded unexpectedly"
@@ -613,25 +583,21 @@ class TestGuestPing:
         }
         assert result.stderr == ""
 
-    def test_error_when_domain_off(
-        self, simple_bios_machine: str, automatic_cleanup: None
-    ) -> None:
-        cmd = ["virtomate", "guest-ping", simple_bios_machine]
+    def test_error_when_domain_off(self, simple_bios_vm: str) -> None:
+        cmd = ["virtomate", "guest-ping", simple_bios_vm]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 1, "guest-ping succeeded unexpectedly"
         # No error because the return code already indicates that the guest could not be reached.
         assert result.stdout == ""
         assert result.stderr == ""
 
-    def test_guest_ping(
-        self, simple_bios_machine: str, automatic_cleanup: None
-    ) -> None:
-        start_domain(simple_bios_machine)
-        wait_until_running(simple_bios_machine)
+    def test_guest_ping(self, simple_bios_vm: str) -> None:
+        start_domain(simple_bios_vm)
+        wait_until_running(simple_bios_vm)
 
-        cmd = ["virtomate", "guest-ping", simple_bios_machine]
+        cmd = ["virtomate", "guest-ping", simple_bios_vm]
         result = subprocess.run(cmd, capture_output=True)
-        assert result.returncode == 0, "Could not ping {}".format(simple_bios_machine)
+        assert result.returncode == 0, "Could not ping {}".format(simple_bios_vm)
         assert result.stdout == b""
         assert result.stderr == b""
 
@@ -660,9 +626,7 @@ class TestPoolList:
 
 
 class TestGuestRun:
-    def test_error_unknown_domain(
-        self, simple_bios_machine: str, automatic_cleanup: None
-    ) -> None:
+    def test_error_unknown_domain(self, simple_bios_vm: str) -> None:
         cmd = ["virtomate", "guest-run", "does-not-exist", "echo", "Hello World!"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 1, "guest-run succeeded unexpectedly"
@@ -672,28 +636,24 @@ class TestGuestRun:
         }
         assert result.stderr == ""
 
-    def test_error_domain_not_running(
-        self, simple_bios_machine: str, automatic_cleanup: None
-    ) -> None:
-        cmd = ["virtomate", "guest-run", simple_bios_machine, "echo", "Hello World!"]
+    def test_error_domain_not_running(self, simple_bios_vm: str) -> None:
+        cmd = ["virtomate", "guest-run", simple_bios_vm, "echo", "Hello World!"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 1, "guest-run succeeded unexpectedly"
         assert json.loads(result.stdout) == {
             "type": "IllegalStateError",
-            "message": "Domain '%s' is not running" % simple_bios_machine,
+            "message": "Domain '%s' is not running" % simple_bios_vm,
         }
         assert result.stderr == ""
 
-    def test_hello_world_text(
-        self, simple_bios_machine: str, automatic_cleanup: None
-    ) -> None:
-        start_domain(simple_bios_machine)
-        wait_until_running(simple_bios_machine)
+    def test_hello_world_text(self, simple_bios_vm: str) -> None:
+        start_domain(simple_bios_vm)
+        wait_until_running(simple_bios_vm)
 
         cmd = [
             "virtomate",
             "guest-run",
-            simple_bios_machine,
+            simple_bios_vm,
             "--",
             "echo",
             "-n",
@@ -711,17 +671,15 @@ class TestGuestRun:
         }
         assert result.stderr == ""
 
-    def test_hello_world_base64(
-        self, simple_bios_machine: str, automatic_cleanup: None
-    ) -> None:
-        start_domain(simple_bios_machine)
-        wait_until_running(simple_bios_machine)
+    def test_hello_world_base64(self, simple_bios_vm: str) -> None:
+        start_domain(simple_bios_vm)
+        wait_until_running(simple_bios_vm)
 
         cmd = [
             "virtomate",
             "guest-run",
             "--encode",
-            simple_bios_machine,
+            simple_bios_vm,
             "--",
             "echo",
             "-n",
@@ -739,13 +697,11 @@ class TestGuestRun:
         }
         assert result.stderr == ""
 
-    def test_run_failure(
-        self, simple_bios_machine: str, automatic_cleanup: None
-    ) -> None:
-        start_domain(simple_bios_machine)
-        wait_until_running(simple_bios_machine)
+    def test_run_failure(self, simple_bios_vm: str) -> None:
+        start_domain(simple_bios_vm)
+        wait_until_running(simple_bios_vm)
 
-        cmd = ["virtomate", "guest-run", simple_bios_machine, "cat", "/unknown"]
+        cmd = ["virtomate", "guest-run", simple_bios_vm, "cat", "/unknown"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "guest-run failed unexpectedly"
         assert json.loads(result.stdout) == {
@@ -758,13 +714,11 @@ class TestGuestRun:
         }
         assert result.stderr == ""
 
-    def test_error_if_program_unknown(
-        self, simple_bios_machine: str, automatic_cleanup: None
-    ) -> None:
-        start_domain(simple_bios_machine)
-        wait_until_running(simple_bios_machine)
+    def test_error_if_program_unknown(self, simple_bios_vm: str) -> None:
+        start_domain(simple_bios_vm)
+        wait_until_running(simple_bios_vm)
 
-        cmd = ["virtomate", "guest-run", simple_bios_machine, "/does/not/exist"]
+        cmd = ["virtomate", "guest-run", simple_bios_vm, "/does/not/exist"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 1, "guest-run succeeded unexpectedly"
         assert result.stderr == ""
@@ -773,14 +727,14 @@ class TestGuestRun:
         assert error["type"] == "libvirtError"
         assert "Failed to execute child process" in error["message"]
 
-    def test_bash(self, simple_bios_machine: str, automatic_cleanup: None) -> None:
-        start_domain(simple_bios_machine)
-        wait_until_running(simple_bios_machine)
+    def test_bash(self, simple_bios_vm: str) -> None:
+        start_domain(simple_bios_vm)
+        wait_until_running(simple_bios_vm)
 
         cmd = [
             "virtomate",
             "guest-run",
-            simple_bios_machine,
+            simple_bios_vm,
             "--",
             "/usr/bin/env",
             "bash",
@@ -799,13 +753,11 @@ class TestGuestRun:
         }
         assert result.stderr == ""
 
-    def test_empty_output(
-        self, simple_bios_machine: str, automatic_cleanup: None
-    ) -> None:
-        start_domain(simple_bios_machine)
-        wait_until_running(simple_bios_machine)
+    def test_empty_output(self, simple_bios_vm: str) -> None:
+        start_domain(simple_bios_vm)
+        wait_until_running(simple_bios_vm)
 
-        cmd = ["virtomate", "guest-run", simple_bios_machine, "--", "true"]
+        cmd = ["virtomate", "guest-run", simple_bios_vm, "--", "true"]
         result = subprocess.run(cmd, shell=False, capture_output=True, text=True)
         assert result.returncode == 0, "guest-run failed unexpectedly"
         assert json.loads(result.stdout) == {
@@ -818,16 +770,14 @@ class TestGuestRun:
         }
         assert result.stderr == ""
 
-    def test_stdout_and_stderr(
-        self, simple_bios_machine: str, automatic_cleanup: None
-    ) -> None:
-        start_domain(simple_bios_machine)
-        wait_until_running(simple_bios_machine)
+    def test_stdout_and_stderr(self, simple_bios_vm: str) -> None:
+        start_domain(simple_bios_vm)
+        wait_until_running(simple_bios_vm)
 
         cmd = [
             "virtomate",
             "guest-run",
-            simple_bios_machine,
+            simple_bios_vm,
             "--",
             "/usr/bin/env",
             "bash",
@@ -910,7 +860,7 @@ class TestVolumeList:
 
 class TestVolumeUpload:
     def test_error_if_volume_does_not_exist(
-        self, tmp_path: pathlib.Path, automatic_cleanup: None
+        self, tmp_path: pathlib.Path, after_function_cleanup: None
     ) -> None:
         volume_name = "virtomate-raw-" + "".join(
             random.choices(string.ascii_letters, k=10)
@@ -934,7 +884,7 @@ class TestVolumeUpload:
         assert volumes == []
 
     def test_error_if_volume_is_not_a_file(
-        self, tmp_path: pathlib.Path, automatic_cleanup: None
+        self, tmp_path: pathlib.Path, after_function_cleanup: None
     ) -> None:
         volume_name = "virtomate-raw-" + "".join(
             random.choices(string.ascii_letters, k=10)
@@ -959,7 +909,7 @@ class TestVolumeUpload:
         assert volumes == []
 
     def test_error_if_volume_already_exists(
-        self, tmp_path: pathlib.Path, automatic_cleanup: None
+        self, tmp_path: pathlib.Path, after_function_cleanup: None
     ) -> None:
         volume_name = "virtomate-raw-" + "".join(
             random.choices(string.ascii_letters, k=10)
@@ -1019,7 +969,7 @@ class TestVolumeUpload:
         ]
 
     def test_import_qcow2(
-        self, tmp_path: pathlib.Path, automatic_cleanup: None
+        self, tmp_path: pathlib.Path, after_function_cleanup: None
     ) -> None:
         volume_name = "virtomate-qcow2-" + "".join(
             random.choices(string.ascii_letters, k=10)
@@ -1055,7 +1005,9 @@ class TestVolumeUpload:
             }
         ]
 
-    def test_import_raw(self, tmp_path: pathlib.Path, automatic_cleanup: None) -> None:
+    def test_import_raw(
+        self, tmp_path: pathlib.Path, after_function_cleanup: None
+    ) -> None:
         volume_name = "virtomate-raw-" + "".join(
             random.choices(string.ascii_letters, k=10)
         )

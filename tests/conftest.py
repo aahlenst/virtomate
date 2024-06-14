@@ -46,109 +46,7 @@ def test_connection() -> Generator[libvirt.virConnect, None, None]:
         yield conn
 
 
-@pytest.fixture
-def simple_bios_machine() -> str:
-    vol_xml = """
-    <volume>
-        <name>virtomate-simple-bios</name>
-        <target>
-            <format type='qcow2'/>
-        </target>
-        <backingStore>
-            <path>/var/lib/libvirt/virtomate/simple-bios</path>
-            <format type='qcow2'/>
-        </backingStore>
-    </volume>
-    """
-
-    conn = libvirt.open()
-    try:
-        pool_default = conn.storagePoolLookupByName("default")
-        pool_default.createXML(vol_xml, 0)
-        conn.defineXML(fixture("simple-bios.xml"))
-    finally:
-        if conn is not None:
-            conn.close()
-
-    return "virtomate-simple-bios"
-
-
-@pytest.fixture
-def simple_uefi_machine() -> str:
-    vol_xml = """
-    <volume>
-        <name>virtomate-simple-uefi</name>
-        <target>
-            <format type='qcow2'/>
-        </target>
-        <backingStore>
-            <path>/var/lib/libvirt/virtomate/simple-uefi</path>
-            <format type='qcow2'/>
-        </backingStore>
-    </volume>
-    """
-
-    nvram_xml = """
-    <volume>
-        <name>virtomate-simple-uefi-efivars.fd</name>
-        <target>
-            <format type='raw'/>
-        </target>
-    </volume>
-    """
-
-    conn = libvirt.open()
-    try:
-        pool_default = conn.storagePoolLookupByName("default")
-        pool_default.createXML(vol_xml, 0)
-
-        pool_nvram = conn.storagePoolLookupByName("nvram")
-        nvram_vol = conn.storageVolLookupByPath(
-            "/var/lib/libvirt/virtomate/simple-uefi-efivars.fd"
-        )
-        pool_nvram.createXMLFrom(nvram_xml, nvram_vol, 0)
-
-        conn.defineXML(fixture("simple-uefi.xml"))
-    finally:
-        if conn is not None:
-            conn.close()
-
-    return "virtomate-simple-uefi"
-
-
-@pytest.fixture
-def simple_bios_raw_machine() -> str:
-    vol_xml = """
-    <volume>
-        <name>virtomate-simple-bios-raw</name>
-        <target>
-            <format type='raw'/>
-        </target>
-    </volume>
-    """
-
-    conn = libvirt.open()
-    try:
-        pool_virtomate = conn.storagePoolLookupByName("virtomate")
-        vol_to_clone = pool_virtomate.storageVolLookupByName("simple-bios")
-
-        pool_default = conn.storagePoolLookupByName("default")
-        pool_default.createXMLFrom(vol_xml, vol_to_clone, 0)
-        conn.defineXML(fixture("simple-bios-raw.xml"))
-    finally:
-        if conn is not None:
-            conn.close()
-
-    return "virtomate-simple-bios-raw"
-
-
-@pytest.fixture
-def automatic_cleanup() -> Generator[None, None, None]:
-    """Pytest fixture that removes all QEMU virtual machines and disks from the pools ``default`` and ``nvram`` prefixed
-    with ``virtomate`` after a test has completed.
-    """
-    yield
-
+def _clean_up() -> None:
     conn = libvirt.open()
     try:
         for name in ["default", "nvram"]:
@@ -178,3 +76,123 @@ def automatic_cleanup() -> Generator[None, None, None]:
     finally:
         if conn is not None:
             conn.close()
+
+
+def _simple_bios_vm() -> str:
+    vol_xml = """
+    <volume>
+        <name>virtomate-simple-bios</name>
+        <target>
+            <format type='qcow2'/>
+        </target>
+        <backingStore>
+            <path>/var/lib/libvirt/virtomate/simple-bios</path>
+            <format type='qcow2'/>
+        </backingStore>
+    </volume>
+    """
+
+    conn = libvirt.open()
+    try:
+        pool_default = conn.storagePoolLookupByName("default")
+        pool_default.createXML(vol_xml, 0)
+        conn.defineXML(fixture("simple-bios.xml"))
+    finally:
+        if conn is not None:
+            conn.close()
+
+    return "virtomate-simple-bios"
+
+
+@pytest.fixture
+def simple_bios_vm(after_function_cleanup: None) -> str:
+    return _simple_bios_vm()
+
+
+def _simple_uefi_vm() -> str:
+    vol_xml = """
+        <volume>
+            <name>virtomate-simple-uefi</name>
+            <target>
+                <format type='qcow2'/>
+            </target>
+            <backingStore>
+                <path>/var/lib/libvirt/virtomate/simple-uefi</path>
+                <format type='qcow2'/>
+            </backingStore>
+        </volume>
+        """
+
+    nvram_xml = """
+        <volume>
+            <name>virtomate-simple-uefi-efivars.fd</name>
+            <target>
+                <format type='raw'/>
+            </target>
+        </volume>
+        """
+
+    conn = libvirt.open()
+    try:
+        pool_default = conn.storagePoolLookupByName("default")
+        pool_default.createXML(vol_xml, 0)
+
+        pool_nvram = conn.storagePoolLookupByName("nvram")
+        nvram_vol = conn.storageVolLookupByPath(
+            "/var/lib/libvirt/virtomate/simple-uefi-efivars.fd"
+        )
+        pool_nvram.createXMLFrom(nvram_xml, nvram_vol, 0)
+
+        conn.defineXML(fixture("simple-uefi.xml"))
+    finally:
+        if conn is not None:
+            conn.close()
+
+    return "virtomate-simple-uefi"
+
+
+@pytest.fixture
+def simple_uefi_vm(after_function_cleanup: None) -> str:
+    return _simple_uefi_vm()
+
+
+def _simple_bios_raw_vm() -> str:
+    vol_xml = """
+        <volume>
+            <name>virtomate-simple-bios-raw</name>
+            <target>
+                <format type='raw'/>
+            </target>
+        </volume>
+        """
+
+    conn = libvirt.open()
+    try:
+        pool_virtomate = conn.storagePoolLookupByName("virtomate")
+        vol_to_clone = pool_virtomate.storageVolLookupByName("simple-bios")
+
+        pool_default = conn.storagePoolLookupByName("default")
+        pool_default.createXMLFrom(vol_xml, vol_to_clone, 0)
+        conn.defineXML(fixture("simple-bios-raw.xml"))
+    finally:
+        if conn is not None:
+            conn.close()
+
+    return "virtomate-simple-bios-raw"
+
+
+@pytest.fixture
+def simple_bios_raw_vm(after_function_cleanup: None) -> str:
+    return _simple_bios_raw_vm()
+
+
+@pytest.fixture
+def after_function_cleanup() -> Generator[None, None, None]:
+    yield
+    _clean_up()
+
+
+@pytest.fixture(scope="class")
+def after_class_cleanup() -> Generator[None, None, None]:
+    yield
+    _clean_up()
