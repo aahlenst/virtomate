@@ -48,7 +48,13 @@ def test_connection() -> Generator[virConnect, None, None]:
 
 
 @pytest.fixture
-def default_connection() -> Generator[virConnect, None, None]:
+def conn_for_function() -> Generator[virConnect, None, None]:
+    with connect() as conn:
+        yield conn
+
+
+@pytest.fixture(scope="class")
+def conn_for_class() -> Generator[virConnect, None, None]:
     with connect() as conn:
         yield conn
 
@@ -101,8 +107,16 @@ def _simple_bios_vm(conn: virConnect) -> str:
 
 
 @pytest.fixture
-def simple_bios_vm(default_connection: virConnect, after_function_cleanup: None) -> str:
-    return _simple_bios_vm(default_connection)
+def simple_bios_vm(conn_for_function: virConnect, after_function_cleanup: None) -> str:
+    return _simple_bios_vm(conn_for_function)
+
+
+@pytest.fixture(scope="class")
+def running_vm_for_class(conn_for_class: virConnect, after_class_cleanup: None) -> str:
+    domain_name = _simple_bios_vm(conn_for_class)
+    domain = conn_for_class.lookupByName(domain_name)
+    domain.create()
+    return domain_name
 
 
 def _simple_uefi_vm(conn: virConnect) -> str:
@@ -143,8 +157,8 @@ def _simple_uefi_vm(conn: virConnect) -> str:
 
 
 @pytest.fixture
-def simple_uefi_vm(default_connection: virConnect, after_function_cleanup: None) -> str:
-    return _simple_uefi_vm(default_connection)
+def simple_uefi_vm(conn_for_function: virConnect, after_function_cleanup: None) -> str:
+    return _simple_uefi_vm(conn_for_function)
 
 
 def _simple_bios_raw_vm(conn: virConnect) -> str:
@@ -169,20 +183,20 @@ def _simple_bios_raw_vm(conn: virConnect) -> str:
 
 @pytest.fixture
 def simple_bios_raw_vm(
-    default_connection: virConnect, after_function_cleanup: None
+    conn_for_function: virConnect, after_function_cleanup: None
 ) -> str:
-    return _simple_bios_raw_vm(default_connection)
+    return _simple_bios_raw_vm(conn_for_function)
 
 
 @pytest.fixture
 def after_function_cleanup(
-    default_connection: virConnect,
+    conn_for_function: virConnect,
 ) -> Generator[None, None, None]:
     yield
-    _clean_up(default_connection)
+    _clean_up(conn_for_function)
 
 
 @pytest.fixture(scope="class")
-def after_class_cleanup(default_connection: virConnect) -> Generator[None, None, None]:
+def after_class_cleanup(conn_for_class: virConnect) -> Generator[None, None, None]:
     yield
-    _clean_up(default_connection)
+    _clean_up(conn_for_class)

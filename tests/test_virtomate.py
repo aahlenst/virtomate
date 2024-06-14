@@ -626,7 +626,7 @@ class TestPoolList:
 
 
 class TestGuestRun:
-    def test_error_unknown_domain(self, simple_bios_vm: str) -> None:
+    def test_error_unknown_domain(self) -> None:
         cmd = ["virtomate", "guest-run", "does-not-exist", "echo", "Hello World!"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 1, "guest-run succeeded unexpectedly"
@@ -646,14 +646,13 @@ class TestGuestRun:
         }
         assert result.stderr == ""
 
-    def test_hello_world_text(self, simple_bios_vm: str) -> None:
-        start_domain(simple_bios_vm)
-        wait_until_running(simple_bios_vm)
+    def test_hello_world_text(self, running_vm_for_class: str) -> None:
+        wait_until_running(running_vm_for_class)
 
         cmd = [
             "virtomate",
             "guest-run",
-            simple_bios_vm,
+            running_vm_for_class,
             "--",
             "echo",
             "-n",
@@ -671,15 +670,14 @@ class TestGuestRun:
         }
         assert result.stderr == ""
 
-    def test_hello_world_base64(self, simple_bios_vm: str) -> None:
-        start_domain(simple_bios_vm)
-        wait_until_running(simple_bios_vm)
+    def test_hello_world_base64(self, running_vm_for_class: str) -> None:
+        wait_until_running(running_vm_for_class)
 
         cmd = [
             "virtomate",
             "guest-run",
             "--encode",
-            simple_bios_vm,
+            running_vm_for_class,
             "--",
             "echo",
             "-n",
@@ -697,11 +695,10 @@ class TestGuestRun:
         }
         assert result.stderr == ""
 
-    def test_run_failure(self, simple_bios_vm: str) -> None:
-        start_domain(simple_bios_vm)
-        wait_until_running(simple_bios_vm)
+    def test_run_failure(self, running_vm_for_class: str) -> None:
+        wait_until_running(running_vm_for_class)
 
-        cmd = ["virtomate", "guest-run", simple_bios_vm, "cat", "/unknown"]
+        cmd = ["virtomate", "guest-run", running_vm_for_class, "cat", "/unknown"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "guest-run failed unexpectedly"
         assert json.loads(result.stdout) == {
@@ -714,11 +711,10 @@ class TestGuestRun:
         }
         assert result.stderr == ""
 
-    def test_error_if_program_unknown(self, simple_bios_vm: str) -> None:
-        start_domain(simple_bios_vm)
-        wait_until_running(simple_bios_vm)
+    def test_error_if_program_unknown(self, running_vm_for_class: str) -> None:
+        wait_until_running(running_vm_for_class)
 
-        cmd = ["virtomate", "guest-run", simple_bios_vm, "/does/not/exist"]
+        cmd = ["virtomate", "guest-run", running_vm_for_class, "/does/not/exist"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 1, "guest-run succeeded unexpectedly"
         assert result.stderr == ""
@@ -727,14 +723,13 @@ class TestGuestRun:
         assert error["type"] == "libvirtError"
         assert "Failed to execute child process" in error["message"]
 
-    def test_bash(self, simple_bios_vm: str) -> None:
-        start_domain(simple_bios_vm)
-        wait_until_running(simple_bios_vm)
+    def test_bash(self, running_vm_for_class: str) -> None:
+        wait_until_running(running_vm_for_class)
 
         cmd = [
             "virtomate",
             "guest-run",
-            simple_bios_vm,
+            running_vm_for_class,
             "--",
             "/usr/bin/env",
             "bash",
@@ -753,11 +748,10 @@ class TestGuestRun:
         }
         assert result.stderr == ""
 
-    def test_empty_output(self, simple_bios_vm: str) -> None:
-        start_domain(simple_bios_vm)
-        wait_until_running(simple_bios_vm)
+    def test_empty_output(self, running_vm_for_class: str) -> None:
+        wait_until_running(running_vm_for_class)
 
-        cmd = ["virtomate", "guest-run", simple_bios_vm, "--", "true"]
+        cmd = ["virtomate", "guest-run", running_vm_for_class, "--", "true"]
         result = subprocess.run(cmd, shell=False, capture_output=True, text=True)
         assert result.returncode == 0, "guest-run failed unexpectedly"
         assert json.loads(result.stdout) == {
@@ -770,14 +764,13 @@ class TestGuestRun:
         }
         assert result.stderr == ""
 
-    def test_stdout_and_stderr(self, simple_bios_vm: str) -> None:
-        start_domain(simple_bios_vm)
-        wait_until_running(simple_bios_vm)
+    def test_stdout_and_stderr(self, running_vm_for_class: str) -> None:
+        wait_until_running(running_vm_for_class)
 
         cmd = [
             "virtomate",
             "guest-run",
-            simple_bios_vm,
+            running_vm_for_class,
             "--",
             "/usr/bin/env",
             "bash",
