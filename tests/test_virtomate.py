@@ -253,13 +253,12 @@ class TestDomainIfaceList:
         }
         assert result.stderr == ""
 
-    def test_all_sources(self, simple_bios_vm: str) -> None:
-        start_domain(simple_bios_vm)
-        wait_until_running(simple_bios_vm)
-        wait_for_network(simple_bios_vm)
+    def test_default_source(self, running_vm_for_class: str) -> None:
+        wait_until_running(running_vm_for_class)
+        wait_for_network(running_vm_for_class)
 
         # Default is lease (same as of `virsh domifaddr`)
-        cmd = ["virtomate", "domain-iface-list", simple_bios_vm]
+        cmd = ["virtomate", "domain-iface-list", running_vm_for_class]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "domain-iface-list failed unexpectedly"
         assert result.stderr == ""
@@ -275,13 +274,16 @@ class TestDomainIfaceList:
             },
         ]
 
-        # Lease (explicit)
+    def test_source_lease(self, running_vm_for_class: str) -> None:
+        wait_until_running(running_vm_for_class)
+        wait_for_network(running_vm_for_class)
+
         cmd = [
             "virtomate",
             "domain-iface-list",
             "--source",
             "lease",
-            simple_bios_vm,
+            running_vm_for_class,
         ]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "domain-iface-list failed unexpectedly"
@@ -296,13 +298,16 @@ class TestDomainIfaceList:
             },
         ]
 
-        # Agent
+    def test_source_agent(self, running_vm_for_class: str) -> None:
+        wait_until_running(running_vm_for_class)
+        wait_for_network(running_vm_for_class)
+
         cmd = [
             "virtomate",
             "domain-iface-list",
             "--source",
             "agent",
-            simple_bios_vm,
+            running_vm_for_class,
         ]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "domain-iface-list failed unexpectedly"
@@ -328,8 +333,17 @@ class TestDomainIfaceList:
             },
         ]
 
-        # ARP table
-        cmd = ["virtomate", "domain-iface-list", "--source", "arp", simple_bios_vm]
+    def test_source_arp(self, running_vm_for_class: str) -> None:
+        wait_until_running(running_vm_for_class)
+        wait_for_network(running_vm_for_class)
+
+        cmd = [
+            "virtomate",
+            "domain-iface-list",
+            "--source",
+            "arp",
+            running_vm_for_class,
+        ]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "domain-iface-list failed unexpectedly"
         assert result.stderr == ""
