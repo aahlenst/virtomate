@@ -116,9 +116,15 @@ def _ping_guest(args: argparse.Namespace) -> int:
 
 
 def _run_in_guest(args: argparse.Namespace) -> int:
+    logger.debug("Recognized arguments: %s", args)
     with connect(args.connection) as conn:
         result = guest.run_in_guest(
-            conn, args.domain, args.program, args.argument, encode=args.encode
+            conn,
+            args.domain,
+            args.program,
+            args.argument,
+            encode=args.encode,
+            stdin=args.stdin,
         )
         print(json.dumps(result))
         return 0
@@ -256,6 +262,15 @@ def main() -> int:
         action="store_true",
         help="encode output with Base64",
     )
+    # Use a flag to indicate that stdin should be consumed. As stdin is not mandatory, it is not possible to use a
+    # positional argument for it because we are already treating all optional arguments as arguments for `program`.
+    p_guest_run.add_argument(
+        "--stdin",
+        action="store_const",
+        const=sys.stdin,
+        help="consume stdin and pass it to program",
+    )
+
     p_guest_run.add_argument(
         "domain",
         type=str,

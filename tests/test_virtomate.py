@@ -802,6 +802,35 @@ class TestGuestRun:
         }
         assert result.stderr == ""
 
+    def test_stdin(self, running_vm_for_class: str) -> None:
+        wait_until_running(running_vm_for_class)
+
+        cmd = [
+            "virtomate",
+            "guest-run",
+            running_vm_for_class,
+            "--stdin",
+            "--",
+            "wc",
+            "-m",
+        ]
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            input="Hello World",
+        )
+        assert result.returncode == 0, "guest-run failed unexpectedly"
+        assert json.loads(result.stdout) == {
+            "exit_code": 0,
+            "signal": None,
+            "stdout": "11\n",
+            "stderr": None,
+            "stdout_truncated": False,
+            "stderr_truncated": False,
+        }
+        assert result.stderr == ""
+
 
 class TestVolumeList:
     def test_list_nonexistent_pool(self) -> None:
