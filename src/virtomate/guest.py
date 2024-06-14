@@ -1,10 +1,18 @@
 import json
+import logging
+import sys
+import time
+from base64 import b64decode
+from collections.abc import Sequence
+from typing import TypedDict
 
 import libvirt
 import libvirt_qemu
-from libvirt import virConnect
+from libvirt import virConnect, virDomain
 
-from virtomate.error import NotFoundError
+from virtomate.error import NotFoundError, IllegalStateError
+
+logger = logging.getLogger(__name__)
 
 
 def ping_guest(conn: virConnect, domain_name: str) -> bool:
@@ -38,3 +46,140 @@ def ping_guest(conn: virConnect, domain_name: str) -> bool:
         return True
     except libvirt.libvirtError:
         return False
+
+
+_GuestExecStatus = TypedDict(
+    "_GuestExecStatus",
+    {
+        "exited": bool,
+        "exitcode": int,
+        "signal": int,
+        "out-data": str,
+        "err-data": str,
+        "out-truncated": bool,
+        "err-truncated": bool,
+    },
+    total=False,
+)
+
+
+class RunStatus(TypedDict):
+    exit_code: int | None
+    signal: int | None
+    stdout: str | None
+    stderr: str | None
+    stdout_truncated: bool
+    stderr_truncated: bool
+
+
+def run_in_guest(
+    conn: virConnect,
+    domain_name: str,
+    program: str,
+    arguments: Sequence[str],
+    encode: bool = False,
+) -> RunStatus:
+    try:
+        domain = conn.lookupByName(domain_name)
+    except libvirt.libvirtError as ex:
+        raise NotFoundError(
+            "Domain '%(domain)s' does not exist" % {"domain": domain_name}
+        ) from ex
+
+    # Validate state instead of using domain_in_state to save a lookup.
+    (domain_state, _) = domain.state(0)
+    if domain_state != libvirt.VIR_DOMAIN_RUNNING:
+        raise IllegalStateError(
+            "Domain '%(domain)s' is not running" % {"domain": domain_name}
+        )
+
+    pid = _guest_exec(domain, program, arguments)
+    result = _wait_for_guest_exec(domain, pid)
+
+    # For JSON structure, see https://qemu-project.gitlab.io/qemu/interop/qemu-ga-ref.html#qapidoc-194
+    exit_code = result["exitcode"] if "exitcode" in result else None
+    signal = result["signal"] if "signal" in result else None
+
+    stdout = None
+    if "out-data" in result:
+        if encode:
+            stdout = result["out-data"]
+        else:
+            stdout = b64decode(result["out-data"]).decode("utf-8")
+
+    stderr = None
+    if "err-data" in result:
+        if encode:
+            stderr = result["err-data"]
+        else:
+            stderr = b64decode(result["err-data"]).decode("utf-8")
+
+    # According to https://gitlab.com/qemu-project/qemu/-/blob/master/qga/commands.c#L23, the maximum output size is 16
+    # MB. But libvirt already refuses to process responses that are much smaller (around 4 MB unencoded) and raises an
+    # error. Hence, we never get into the situation that output is truncated. But libvirt might change its mind and
+    # start accepting much larger messages. Hence, it seems sensible to leave it in.
+    stdout_truncated = False
+    if "out-truncated" in result:
+        stdout_truncated = result["out-truncated"]
+
+    stderr_truncated = False
+    if "err-truncated" in result:
+        stderr_truncated = result["err-truncated"]
+
+    return {
+        "exit_code": exit_code,
+        "signal": signal,
+        "stdout": stdout,
+        "stderr": stderr,
+        "stdout_truncated": stdout_truncated,
+        "stderr_truncated": stderr_truncated,
+    }
+
+
+def _guest_exec(domain: virDomain, program: str, arguments: Sequence[str]) -> int:
+    cmd = {
+        "execute": "guest-exec",
+        "arguments": {"path": program, "arg": arguments, "capture-output": True},
+    }
+    cmd_json = json.dumps(cmd)
+
+    logger.debug("Sending QMP command to %s: %s", domain.name(), cmd_json)
+
+    result_json = libvirt_qemu.qemuAgentCommand(
+        domain, cmd_json, libvirt_qemu.VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT, 0
+    )
+
+    logger.debug("QMP response received from %s: %s", domain.name(), result_json)
+
+    result = json.loads(result_json)
+    # For JSON structure, see https://qemu-project.gitlab.io/qemu/interop/qemu-ga-ref.html#qapidoc-201
+    pid = result["return"]["pid"]
+    assert isinstance(pid, int), "PID is not a number"
+    return pid
+
+
+def _wait_for_guest_exec(
+    domain: virDomain, pid: int, timeout: int = sys.maxsize
+) -> _GuestExecStatus:
+    start = time.monotonic()
+    while True:
+        if (time.monotonic() - start) > timeout:
+            raise TimeoutError("Agent command did not complete in %u seconds" % timeout)
+
+        cmd = {"execute": "guest-exec-status", "arguments": {"pid": pid}}
+        cmd_json = json.dumps(cmd)
+
+        logger.debug("Sending QMP command to %s: %s", domain.name(), cmd_json)
+
+        result_json = libvirt_qemu.qemuAgentCommand(
+            domain, cmd_json, libvirt_qemu.VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT, 0
+        )
+
+        logger.debug("QMP response received from %s: %s", domain.name(), result_json)
+
+        result: _GuestExecStatus = json.loads(result_json)["return"]
+        if not result["exited"]:
+            logger.debug("Command has not finished yet, trying again")
+            continue
+
+        return result

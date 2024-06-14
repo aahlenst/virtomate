@@ -659,6 +659,194 @@ class TestPoolList:
         }
 
 
+class TestGuestRun:
+    def test_error_unknown_domain(
+        self, simple_bios_machine: str, automatic_cleanup: None
+    ) -> None:
+        cmd = ["virtomate", "guest-run", "does-not-exist", "echo", "Hello World!"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 1, "guest-run succeeded unexpectedly"
+        assert json.loads(result.stdout) == {
+            "type": "NotFoundError",
+            "message": "Domain 'does-not-exist' does not exist",
+        }
+        assert result.stderr == ""
+
+    def test_error_domain_not_running(
+        self, simple_bios_machine: str, automatic_cleanup: None
+    ) -> None:
+        cmd = ["virtomate", "guest-run", simple_bios_machine, "echo", "Hello World!"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 1, "guest-run succeeded unexpectedly"
+        assert json.loads(result.stdout) == {
+            "type": "IllegalStateError",
+            "message": "Domain '%s' is not running" % simple_bios_machine,
+        }
+        assert result.stderr == ""
+
+    def test_hello_world_text(
+        self, simple_bios_machine: str, automatic_cleanup: None
+    ) -> None:
+        start_domain(simple_bios_machine)
+        wait_until_running(simple_bios_machine)
+
+        cmd = [
+            "virtomate",
+            "guest-run",
+            simple_bios_machine,
+            "--",
+            "echo",
+            "-n",
+            "Hello World!",
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 0, "guest-run failed unexpectedly"
+        assert json.loads(result.stdout) == {
+            "exit_code": 0,
+            "signal": None,
+            "stdout": "Hello World!",
+            "stderr": None,
+            "stdout_truncated": False,
+            "stderr_truncated": False,
+        }
+        assert result.stderr == ""
+
+    def test_hello_world_base64(
+        self, simple_bios_machine: str, automatic_cleanup: None
+    ) -> None:
+        start_domain(simple_bios_machine)
+        wait_until_running(simple_bios_machine)
+
+        cmd = [
+            "virtomate",
+            "guest-run",
+            "--encode",
+            simple_bios_machine,
+            "--",
+            "echo",
+            "-n",
+            "Hello World!",
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 0, "guest-run failed unexpectedly"
+        assert json.loads(result.stdout) == {
+            "exit_code": 0,
+            "signal": None,
+            "stdout": "SGVsbG8gV29ybGQh",  # == Hello World!
+            "stderr": None,
+            "stdout_truncated": False,
+            "stderr_truncated": False,
+        }
+        assert result.stderr == ""
+
+    def test_run_failure(
+        self, simple_bios_machine: str, automatic_cleanup: None
+    ) -> None:
+        start_domain(simple_bios_machine)
+        wait_until_running(simple_bios_machine)
+
+        cmd = ["virtomate", "guest-run", simple_bios_machine, "cat", "/unknown"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 0, "guest-run failed unexpectedly"
+        assert json.loads(result.stdout) == {
+            "exit_code": 1,
+            "signal": None,
+            "stdout": None,
+            "stderr": "cat: /unknown: No such file or directory\n",
+            "stdout_truncated": False,
+            "stderr_truncated": False,
+        }
+        assert result.stderr == ""
+
+    def test_error_if_program_unknown(
+        self, simple_bios_machine: str, automatic_cleanup: None
+    ) -> None:
+        start_domain(simple_bios_machine)
+        wait_until_running(simple_bios_machine)
+
+        cmd = ["virtomate", "guest-run", simple_bios_machine, "/does/not/exist"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 1, "guest-run succeeded unexpectedly"
+        assert result.stderr == ""
+
+        error = json.loads(result.stdout)
+        assert error["type"] == "libvirtError"
+        assert "Failed to execute child process" in error["message"]
+
+    def test_bash(self, simple_bios_machine: str, automatic_cleanup: None) -> None:
+        start_domain(simple_bios_machine)
+        wait_until_running(simple_bios_machine)
+
+        cmd = [
+            "virtomate",
+            "guest-run",
+            simple_bios_machine,
+            "--",
+            "/usr/bin/env",
+            "bash",
+            "-c",
+            'printf "Hello World" | wc -m',
+        ]
+        result = subprocess.run(cmd, shell=False, capture_output=True, text=True)
+        assert result.returncode == 0, "guest-run failed unexpectedly"
+        assert json.loads(result.stdout) == {
+            "exit_code": 0,
+            "signal": None,
+            "stdout": "11\n",  # len("Hello World")
+            "stderr": None,
+            "stdout_truncated": False,
+            "stderr_truncated": False,
+        }
+        assert result.stderr == ""
+
+    def test_empty_output(
+        self, simple_bios_machine: str, automatic_cleanup: None
+    ) -> None:
+        start_domain(simple_bios_machine)
+        wait_until_running(simple_bios_machine)
+
+        cmd = ["virtomate", "guest-run", simple_bios_machine, "--", "true"]
+        result = subprocess.run(cmd, shell=False, capture_output=True, text=True)
+        assert result.returncode == 0, "guest-run failed unexpectedly"
+        assert json.loads(result.stdout) == {
+            "exit_code": 0,
+            "signal": None,
+            "stdout": None,
+            "stderr": None,
+            "stdout_truncated": False,
+            "stderr_truncated": False,
+        }
+        assert result.stderr == ""
+
+    def test_stdout_and_stderr(
+        self, simple_bios_machine: str, automatic_cleanup: None
+    ) -> None:
+        start_domain(simple_bios_machine)
+        wait_until_running(simple_bios_machine)
+
+        cmd = [
+            "virtomate",
+            "guest-run",
+            simple_bios_machine,
+            "--",
+            "/usr/bin/env",
+            "bash",
+            "-c",
+            "printf 'out' ; printf 'err' 1>&2",
+        ]
+        result = subprocess.run(cmd, shell=False, capture_output=True, text=True)
+        assert result.returncode == 0, "guest-run failed unexpectedly"
+        assert json.loads(result.stdout) == {
+            "exit_code": 0,
+            "signal": None,
+            "stdout": "out",
+            "stderr": "err",
+            "stdout_truncated": False,
+            "stderr_truncated": False,
+        }
+        assert result.stderr == ""
+
+
 class TestVolumeList:
     def test_list_nonexistent_pool(self) -> None:
         cmd = ["virtomate", "volume-list", "does-not-exist"]

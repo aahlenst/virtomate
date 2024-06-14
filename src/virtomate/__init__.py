@@ -115,6 +115,15 @@ def _ping_guest(args: argparse.Namespace) -> int:
             return 1
 
 
+def _run_in_guest(args: argparse.Namespace) -> int:
+    with connect(args.connection) as conn:
+        result = guest.run_in_guest(
+            conn, args.domain, args.program, args.argument, encode=args.encode
+        )
+        print(json.dumps(result))
+        return 0
+
+
 def _list_pools(args: argparse.Namespace) -> int:
     with connect(args.connection) as conn:
         result = pool.list_pools(conn)
@@ -238,6 +247,32 @@ def main() -> int:
         help="name of the domain to ping",
     )
     p_guest_ping.set_defaults(func=_ping_guest)
+
+    # guest-run
+    p_guest_run = sp.add_parser("guest-run", help="run a program in the domain")
+    p_guest_run.add_argument(
+        "-e",
+        "--encode",
+        action="store_true",
+        help="encode output with Base64",
+    )
+    p_guest_run.add_argument(
+        "domain",
+        type=str,
+        help="name of the domain",
+    )
+    p_guest_run.add_argument(
+        "program",
+        type=str,
+        help="path of the program to run",
+    )
+    p_guest_run.add_argument(
+        "argument",
+        type=str,
+        nargs="*",
+        help="optional program argument",
+    )
+    p_guest_run.set_defaults(func=_run_in_guest)
 
     # pool-list
     p_pool_list = sp.add_parser("pool-list", help="list storage pools")
