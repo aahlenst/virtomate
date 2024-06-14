@@ -1,6 +1,7 @@
 from collections.abc import Generator
 
 import libvirt
+from libvirt import virConnect
 import pytest
 
 from tests.resources import fixture
@@ -41,44 +42,45 @@ def pytest_collection_modifyitems(
 
 
 @pytest.fixture
-def test_connection() -> Generator[libvirt.virConnect, None, None]:
+def test_connection() -> Generator[virConnect, None, None]:
     with connect("test:///default") as conn:
         yield conn
 
 
-def _clean_up() -> None:
-    conn = libvirt.open()
-    try:
-        for name in ["default", "nvram"]:
-            pool = conn.storagePoolLookupByName(name)
-            for volume in pool.listAllVolumes():
-                if not volume.name().startswith("virtomate-"):
-                    continue
+@pytest.fixture
+def default_connection() -> Generator[virConnect, None, None]:
+    with connect() as conn:
+        yield conn
 
-                volume.delete(0)
 
-        domains = conn.listAllDomains()
-        for domain in domains:
-            if not domain.name().startswith("virtomate-"):
+def _clean_up(conn: virConnect) -> None:
+    for name in ["default", "nvram"]:
+        pool = conn.storagePoolLookupByName(name)
+        for volume in pool.listAllVolumes():
+            if not volume.name().startswith("virtomate-"):
                 continue
 
-            (state, _) = domain.state()
-            if state == libvirt.VIR_DOMAIN_RUNNING:
-                domain.destroy()
+            volume.delete(0)
 
-            flags = 0
-            flags |= libvirt.VIR_DOMAIN_UNDEFINE_MANAGED_SAVE
-            flags |= libvirt.VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA
-            flags |= libvirt.VIR_DOMAIN_UNDEFINE_NVRAM
-            flags |= libvirt.VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA
-            flags |= libvirt.VIR_DOMAIN_UNDEFINE_TPM
-            domain.undefineFlags(flags)
-    finally:
-        if conn is not None:
-            conn.close()
+    domains = conn.listAllDomains()
+    for domain in domains:
+        if not domain.name().startswith("virtomate-"):
+            continue
+
+        (state, _) = domain.state()
+        if state == libvirt.VIR_DOMAIN_RUNNING:
+            domain.destroy()
+
+        flags = 0
+        flags |= libvirt.VIR_DOMAIN_UNDEFINE_MANAGED_SAVE
+        flags |= libvirt.VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA
+        flags |= libvirt.VIR_DOMAIN_UNDEFINE_NVRAM
+        flags |= libvirt.VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA
+        flags |= libvirt.VIR_DOMAIN_UNDEFINE_TPM
+        domain.undefineFlags(flags)
 
 
-def _simple_bios_vm() -> str:
+def _simple_bios_vm(conn: virConnect) -> str:
     vol_xml = """
     <volume>
         <name>virtomate-simple-bios</name>
@@ -91,25 +93,19 @@ def _simple_bios_vm() -> str:
         </backingStore>
     </volume>
     """
-
-    conn = libvirt.open()
-    try:
-        pool_default = conn.storagePoolLookupByName("default")
-        pool_default.createXML(vol_xml, 0)
-        conn.defineXML(fixture("simple-bios.xml"))
-    finally:
-        if conn is not None:
-            conn.close()
+    pool_default = conn.storagePoolLookupByName("default")
+    pool_default.createXML(vol_xml, 0)
+    conn.defineXML(fixture("simple-bios.xml"))
 
     return "virtomate-simple-bios"
 
 
 @pytest.fixture
-def simple_bios_vm(after_function_cleanup: None) -> str:
-    return _simple_bios_vm()
+def simple_bios_vm(default_connection: virConnect, after_function_cleanup: None) -> str:
+    return _simple_bios_vm(default_connection)
 
 
-def _simple_uefi_vm() -> str:
+def _simple_uefi_vm(conn: virConnect) -> str:
     vol_xml = """
         <volume>
             <name>virtomate-simple-uefi</name>
@@ -132,31 +128,26 @@ def _simple_uefi_vm() -> str:
         </volume>
         """
 
-    conn = libvirt.open()
-    try:
-        pool_default = conn.storagePoolLookupByName("default")
-        pool_default.createXML(vol_xml, 0)
+    pool_default = conn.storagePoolLookupByName("default")
+    pool_default.createXML(vol_xml, 0)
 
-        pool_nvram = conn.storagePoolLookupByName("nvram")
-        nvram_vol = conn.storageVolLookupByPath(
-            "/var/lib/libvirt/virtomate/simple-uefi-efivars.fd"
-        )
-        pool_nvram.createXMLFrom(nvram_xml, nvram_vol, 0)
+    pool_nvram = conn.storagePoolLookupByName("nvram")
+    nvram_vol = conn.storageVolLookupByPath(
+        "/var/lib/libvirt/virtomate/simple-uefi-efivars.fd"
+    )
+    pool_nvram.createXMLFrom(nvram_xml, nvram_vol, 0)
 
-        conn.defineXML(fixture("simple-uefi.xml"))
-    finally:
-        if conn is not None:
-            conn.close()
+    conn.defineXML(fixture("simple-uefi.xml"))
 
     return "virtomate-simple-uefi"
 
 
 @pytest.fixture
-def simple_uefi_vm(after_function_cleanup: None) -> str:
-    return _simple_uefi_vm()
+def simple_uefi_vm(default_connection: virConnect, after_function_cleanup: None) -> str:
+    return _simple_uefi_vm(default_connection)
 
 
-def _simple_bios_raw_vm() -> str:
+def _simple_bios_raw_vm(conn: virConnect) -> str:
     vol_xml = """
         <volume>
             <name>virtomate-simple-bios-raw</name>
@@ -166,33 +157,32 @@ def _simple_bios_raw_vm() -> str:
         </volume>
         """
 
-    conn = libvirt.open()
-    try:
-        pool_virtomate = conn.storagePoolLookupByName("virtomate")
-        vol_to_clone = pool_virtomate.storageVolLookupByName("simple-bios")
+    pool_virtomate = conn.storagePoolLookupByName("virtomate")
+    vol_to_clone = pool_virtomate.storageVolLookupByName("simple-bios")
 
-        pool_default = conn.storagePoolLookupByName("default")
-        pool_default.createXMLFrom(vol_xml, vol_to_clone, 0)
-        conn.defineXML(fixture("simple-bios-raw.xml"))
-    finally:
-        if conn is not None:
-            conn.close()
+    pool_default = conn.storagePoolLookupByName("default")
+    pool_default.createXMLFrom(vol_xml, vol_to_clone, 0)
+    conn.defineXML(fixture("simple-bios-raw.xml"))
 
     return "virtomate-simple-bios-raw"
 
 
 @pytest.fixture
-def simple_bios_raw_vm(after_function_cleanup: None) -> str:
-    return _simple_bios_raw_vm()
+def simple_bios_raw_vm(
+    default_connection: virConnect, after_function_cleanup: None
+) -> str:
+    return _simple_bios_raw_vm(default_connection)
 
 
 @pytest.fixture
-def after_function_cleanup() -> Generator[None, None, None]:
+def after_function_cleanup(
+    default_connection: virConnect,
+) -> Generator[None, None, None]:
     yield
-    _clean_up()
+    _clean_up(default_connection)
 
 
 @pytest.fixture(scope="class")
-def after_class_cleanup() -> Generator[None, None, None]:
+def after_class_cleanup(default_connection: virConnect) -> Generator[None, None, None]:
     yield
-    _clean_up()
+    _clean_up(default_connection)
