@@ -151,7 +151,7 @@ def _list_volumes(args: argparse.Namespace) -> int:
 
 def _import_volume(args: argparse.Namespace) -> int:
     with connect(args.connection) as conn:
-        volume.import_volume(conn, args.file, args.pool)
+        volume.import_volume(conn, args.file, args.pool, args.new_name)
         return 0
 
 
@@ -318,6 +318,12 @@ def main() -> int:
         "pool",
         type=str,
         help="name of the pool that the volume should be imported into",
+    )
+    p_volume_import.add_argument(
+        "new_name",
+        type=str,
+        nargs="?",
+        help="name of the imported volume",
     )
     p_volume_import.set_defaults(func=_import_volume)
 

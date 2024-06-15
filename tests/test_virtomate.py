@@ -1077,3 +1077,46 @@ class TestVolumeImport:
                 "type": "file",
             }
         ]
+
+    def test_import_with_rename(
+        self, tmp_path: pathlib.Path, after_function_cleanup: None
+    ) -> None:
+        volume_name = "virtomate-qcow2-" + "".join(
+            random.choices(string.ascii_letters, k=10)
+        )
+        volume_path = tmp_path.joinpath(volume_name)
+
+        cmd = ["qemu-img", "create", "-f", "qcow2", str(volume_path), "1G"]
+        subprocess.run(cmd, check=True)
+
+        volumes = list_virtomate_volumes("default")
+        assert volumes == []
+
+        cmd = [
+            "virtomate",
+            "volume-import",
+            str(volume_path),
+            "default",
+            "virtomate-renamed",
+        ]
+        result = subprocess.run(cmd, text=True, capture_output=True)
+        assert result.returncode == 0
+        assert result.stdout == ""
+        assert result.stderr == ""
+
+        volumes = list_virtomate_volumes("default")
+        assert volumes == [
+            {
+                "allocation": 200704,
+                "backing_store": None,
+                "capacity": 1073741824,
+                "key": "/var/lib/libvirt/images/virtomate-renamed",
+                "name": "virtomate-renamed",
+                "physical": 196624,
+                "target": {
+                    "format_type": "qcow2",
+                    "path": "/var/lib/libvirt/images/virtomate-renamed",
+                },
+                "type": "file",
+            }
+        ]

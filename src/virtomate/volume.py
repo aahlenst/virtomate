@@ -133,7 +133,9 @@ def _extract_backing_store(volume_tag: Element) -> BackingStoreDescriptor | None
     return backing_store
 
 
-def import_volume(conn: virConnect, file: str, pool_name: str) -> None:
+def import_volume(
+    conn: virConnect, file: str, pool_name: str, new_name: str | None = None
+) -> None:
     """Import ``file`` on the local machine into the libvirt pool named ``pool_name``. The resulting volume will have
     the same name as the file to import. Raises :py:class:`virtomate.error.Conflict` if a volume with the same name
     already exists.
@@ -143,8 +145,9 @@ def import_volume(conn: virConnect, file: str, pool_name: str) -> None:
 
     Args:
         conn: libvirt connection
-        file: file to import on the local host
-        pool_name: name of the libvirt storage pool where the file should be imported into
+        file: File to import on the local host
+        pool_name: Name of the libvirt storage pool where the file should be imported into
+        new_name: Use ``new_name`` as volume name instead of the name of the file being imported
 
     Raises:
         FileNotFoundError: if the file to import does not exist
@@ -168,7 +171,11 @@ def import_volume(conn: virConnect, file: str, pool_name: str) -> None:
     if not pool_exists(conn, pool_name):
         raise NotFoundError("Pool '%(pool)s' does not exist" % {"pool": pool_name})
 
-    volume_name = os.path.basename(file)
+    if new_name is not None:
+        volume_name = new_name
+    else:
+        volume_name = os.path.basename(file)
+
     if volume_exists(conn, pool_name, volume_name):
         raise Conflict(
             "Volume '%(volume)s' already exists in pool '%(pool)s'"
@@ -189,7 +196,7 @@ def import_volume(conn: virConnect, file: str, pool_name: str) -> None:
 
     volume_tag = ElementTree.Element("volume")
     name_tag = ElementTree.SubElement(volume_tag, "name")
-    name_tag.text = os.path.basename(file)
+    name_tag.text = volume_name
     capacity_tag = ElementTree.SubElement(volume_tag, "capacity", {"unit": "bytes"})
     # Volume will be resized automatically during upload. A size of 0 ensures that a sparse volume stays sparse.
     capacity_tag.text = "0"
