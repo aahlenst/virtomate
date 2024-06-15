@@ -116,8 +116,6 @@ def _ping_guest(args: argparse.Namespace) -> int:
 
 
 def _run_in_guest(args: argparse.Namespace) -> int:
-    logger.debug("Recognized arguments: %s", args)
-
     stdin: bytes | None = None
     if args.stdin is not None:
         stdin = args.stdin.buffer.read()
@@ -330,6 +328,7 @@ def main() -> int:
     args = p.parse_args()
     try:
         _configure_logging(args)
+        logger.debug("Recognised arguments: %s", args)
         status_code = args.func(args)
     except BaseException as ex:
         status_code = _handle_exception(ex, sys.stdout)
