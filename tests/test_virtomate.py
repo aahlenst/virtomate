@@ -893,7 +893,7 @@ class TestVolumeList:
         ]
 
 
-class TestVolumeUpload:
+class TestVolumeImport:
     def test_error_if_volume_does_not_exist(
         self, tmp_path: pathlib.Path, after_function_cleanup: None
     ) -> None:
