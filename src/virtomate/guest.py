@@ -63,7 +63,7 @@ _GuestExecStatus = TypedDict(
 )
 
 
-class RunStatus(TypedDict):
+class RunResult(TypedDict):
     exit_code: int | None
     signal: int | None
     stdout: str | None
@@ -79,7 +79,7 @@ def run_in_guest(
     arguments: Sequence[str],
     encode: bool = False,
     stdin: bytes | None = None,
-) -> RunStatus:
+) -> RunResult:
     """Run ``program`` with its ``arguments`` on the guest identified by ``domain_name``, optionally passing  ``stdin``
     as standard input to ``program``. The program's exit code, standard output and standard error and any potentially
     received signal will be returned once the program has exited. QEMU Guest Agent needs to installed and running on the
