@@ -80,6 +80,35 @@ def run_in_guest(
     encode: bool = False,
     stdin: bytes | None = None,
 ) -> RunStatus:
+    """Run ``program`` with its ``arguments`` on the guest identified by ``domain_name``, optionally passing  ``stdin``
+    as standard input to ``program``. The program's exit code, standard output and standard error and any potentially
+    received signal will be returned once the program has exited. QEMU Guest Agent needs to installed and running on the
+    guest for this function to work. If QEMU Guest Agent is not installed or running, :py:class:`libvirt.libvirtError`
+    will be raised.
+
+    ``program`` will be run directly using an ``exec()``-like function without the involvement of any shell or command
+    prompt.
+
+    Due to limitations of libvirt and QEMU Guest Agent, standard input, output, and error are limited in size to a few
+    megabytes. Furthermore, standard input is fully buffered due to way QEMU Guest Agent operates.
+
+    Args:
+        conn: libvirt connection
+        domain_name: Name of the domain
+        program: Name or path of the program to run on the guest. ``program`` must be on ``PATH`` if only the name of
+            ``program`` is given.
+        arguments: Arguments to be passed to ``program``
+        encode: Whether standard output and standard error should be encoded with Base64
+        stdin: Optional standard input to be passed to ``program``
+
+    Returns:
+        Results of the program execution
+
+    Raises:
+        virtomate.error.NotFoundError: if the domain does not exist
+        virtomate.error.IllegalStateError: if the domain is not running
+        libvirt.libvirtError: if any libvirt operation fails
+    """
     try:
         domain = conn.lookupByName(domain_name)
     except libvirt.libvirtError as ex:
