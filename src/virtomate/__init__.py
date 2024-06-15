@@ -117,6 +117,11 @@ def _ping_guest(args: argparse.Namespace) -> int:
 
 def _run_in_guest(args: argparse.Namespace) -> int:
     logger.debug("Recognized arguments: %s", args)
+
+    stdin: bytes | None = None
+    if args.stdin is not None:
+        stdin = args.stdin.buffer.read()
+
     with connect(args.connection) as conn:
         result = guest.run_in_guest(
             conn,
@@ -124,7 +129,7 @@ def _run_in_guest(args: argparse.Namespace) -> int:
             args.program,
             args.argument,
             encode=args.encode,
-            stdin=args.stdin,
+            stdin=stdin,
         )
         print(json.dumps(result))
         return 0

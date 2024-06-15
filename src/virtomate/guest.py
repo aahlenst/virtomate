@@ -4,7 +4,7 @@ import sys
 import time
 from base64 import b64decode, b64encode
 from collections.abc import Sequence
-from typing import TypedDict, TextIO
+from typing import TypedDict
 
 import libvirt
 import libvirt_qemu
@@ -78,7 +78,7 @@ def run_in_guest(
     program: str,
     arguments: Sequence[str],
     encode: bool = False,
-    stdin: TextIO | None = None,
+    stdin: bytes | None = None,
 ) -> RunStatus:
     try:
         domain = conn.lookupByName(domain_name)
@@ -141,12 +141,12 @@ def _guest_exec(
     domain: virDomain,
     program: str,
     arguments: Sequence[str],
-    stdin: TextIO | None = None,
+    stdin: bytes | None = None,
 ) -> int:
     # For JSON structure, see https://qemu-project.gitlab.io/qemu/interop/qemu-ga-ref.html#qapidoc-211
     cmd_args = {"path": program, "arg": arguments, "capture-output": True}
     if stdin is not None:
-        cmd_args["input-data"] = b64encode(stdin.buffer.read()).decode("ascii")
+        cmd_args["input-data"] = b64encode(stdin).decode("ascii")
 
     cmd = {"execute": "guest-exec", "arguments": cmd_args}
     cmd_json = json.dumps(cmd)
