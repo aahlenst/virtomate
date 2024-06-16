@@ -184,7 +184,8 @@ def _print_output(
     result: typing.Any, output: typing.IO[str] = sys.stdout, pretty: bool = False
 ) -> None:
     indent = 2 if pretty else None
-    json.dump(result, output, indent=indent, sort_keys=True)
+    separators = (",", ": ") if pretty else (",", ":")
+    json.dump(result, output, indent=indent, separators=separators, sort_keys=True)
 
 
 def main() -> int:

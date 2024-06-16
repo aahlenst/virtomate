@@ -219,7 +219,10 @@ class TestPrettyOption:
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "domain-list failed unexpectedly"
         assert result.stdout.strip() == json.dumps(
-            self.expected, indent=None, sort_keys=True
+            self.expected,
+            indent=None,
+            separators=(",", ":"),
+            sort_keys=True,
         )
         assert result.stderr == ""
 
@@ -227,7 +230,9 @@ class TestPrettyOption:
         cmd = ["virtomate", "-c", "test:///default", "-p", "domain-list"]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "domain-list failed unexpectedly"
-        assert result.stdout == json.dumps(self.expected, indent=2, sort_keys=True)
+        assert result.stdout == json.dumps(
+            self.expected, indent=2, separators=(",", ": "), sort_keys=True
+        )
         assert result.stderr == ""
 
     def test_long_form(self) -> None:
@@ -240,7 +245,9 @@ class TestPrettyOption:
         ]
         result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "domain-list failed unexpectedly"
-        assert result.stdout == json.dumps(self.expected, indent=2, sort_keys=True)
+        assert result.stdout == json.dumps(
+            self.expected, indent=2, separators=(",", ": "), sort_keys=True
+        )
         assert result.stderr == ""
 
 
