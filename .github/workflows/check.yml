@@ -11,14 +11,9 @@ permissions:
   contents: read
 
 jobs:
-  check:
-    name: Check
+  build:
+    name: Build
     runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [ "3.10", "3.12" ]
-        libvirt-version: [ "9.0.0", "10.3.0" ]
 
     steps:
       - uses: awalsh128/cache-apt-pkgs-action@v1
@@ -30,14 +25,6 @@ jobs:
 
       - name: Set up Rye
         uses: eifinger/setup-rye@v3
-
-      - name: Use Python ${{ matrix.python-version }}
-        run: |
-          rye pin ${{ matrix.python-version }}
-
-      - name: Use python-libvirt ${{ matrix.libvirt-version }}
-        run: |
-          rye add "libvirt-python==${{ matrix.libvirt-version }}"
 
       - name: Install dependencies
         run: |
@@ -56,6 +43,69 @@ jobs:
         run: |
           rye lint
 
-      - name: Run tests
+      - name: Run unit tests
         run: |
           rye test
+
+      - name: Build
+        run: |
+          rye build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  check:
+    name: Check
+    needs:
+      - build
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.10", "3.12" ]
+        libvirt-version: [ "9.0.0", "10.4.0" ]
+
+    steps:
+      - uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: "libvirt-daemon libvirt-clients libvirt-dev"
+          version: 1.0
+
+      - uses: actions/checkout@v4
+
+      - name: Download artifact produced by build job
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Remove src folder to ensure that only the built package is used
+        run: |
+          rm -rf src
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "${{ matrix.python-version }}"
+
+      - name: Initialise virtual environment
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+
+      # Install desired versions and the built package with pip. This ensures that we validate what we have built.
+      # Ideally, development dependencies would be extracted from pyproject.toml. But I could not get pip to do that.
+      # There is no obvious way to do it with rye, either.
+      - name: Install dependencies
+        run: |
+          pip install "libvirt-python==${{ matrix.libvirt-version }}"
+          pip install dist/virtomate*.whl
+          pip install "pytest==8.2.0"
+          pip install "tenacity==8.3.0"
+
+      - name: Run tests
+        run: |
+          pytest tests
