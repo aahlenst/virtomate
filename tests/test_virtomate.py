@@ -205,6 +205,45 @@ class TestConnectionOption:
             next(d for d in domains if d["name"] == simple_bios_vm)
 
 
+class TestPrettyOption:
+    expected = [
+        {
+            "uuid": "6695eb01-f6a4-8304-79aa-97f2502e193f",
+            "name": "test",
+            "state": "running",
+        },
+    ]
+
+    def test_default_not_pretty(self) -> None:
+        cmd = ["virtomate", "-c", "test:///default", "domain-list"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 0, "domain-list failed unexpectedly"
+        assert result.stdout.strip() == json.dumps(
+            self.expected, indent=None, sort_keys=True
+        )
+        assert result.stderr == ""
+
+    def test_short_form(self) -> None:
+        cmd = ["virtomate", "-c", "test:///default", "-p", "domain-list"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 0, "domain-list failed unexpectedly"
+        assert result.stdout == json.dumps(self.expected, indent=2, sort_keys=True)
+        assert result.stderr == ""
+
+    def test_long_form(self) -> None:
+        cmd = [
+            "virtomate",
+            "-c",
+            "test:///default",
+            "--pretty",
+            "domain-list",
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 0, "domain-list failed unexpectedly"
+        assert result.stdout == json.dumps(self.expected, indent=2, sort_keys=True)
+        assert result.stderr == ""
+
+
 class TestDomainList:
     def test_list(self, simple_bios_vm: str, simple_uefi_vm: str) -> None:
         cmd = ["virtomate", "domain-list"]

@@ -68,7 +68,7 @@ def connect(uri: str | None = None) -> Generator[virConnect, None, None]:
 def _list_domains(args: argparse.Namespace) -> int:
     with connect(args.connection) as conn:
         result = domain.list_domains(conn)
-        print(json.dumps(result))
+        _print_output(result, pretty=args.pretty)
         return 0
 
 
@@ -103,7 +103,7 @@ def _list_domain_interfaces(args: argparse.Namespace) -> int:
 
     with connect(args.connection) as conn:
         result = domain.list_domain_interfaces(conn, args.domain, source)
-        print(json.dumps(result))
+        _print_output(result, pretty=args.pretty)
         return 0
 
 
@@ -129,21 +129,21 @@ def _run_in_guest(args: argparse.Namespace) -> int:
             encode=args.encode,
             stdin=stdin,
         )
-        print(json.dumps(result))
+        _print_output(result, pretty=args.pretty)
         return 0
 
 
 def _list_pools(args: argparse.Namespace) -> int:
     with connect(args.connection) as conn:
         result = pool.list_pools(conn)
-        print(json.dumps(result))
+        _print_output(result, pretty=args.pretty)
         return 0
 
 
 def _list_volumes(args: argparse.Namespace) -> int:
     with connect(args.connection) as conn:
         result = volume.list_volumes(conn, args.pool)
-        print(json.dumps(result))
+        _print_output(result, pretty=args.pretty)
         return 0
 
 
@@ -180,6 +180,13 @@ def _configure_logging(args: argparse.Namespace) -> None:
     logging.basicConfig(level=numeric_level, force=True)
 
 
+def _print_output(
+    result: typing.Any, output: typing.IO[str] = sys.stdout, pretty: bool = False
+) -> None:
+    indent = 2 if pretty else None
+    json.dump(result, output, indent=indent, sort_keys=True)
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description="Automate libvirt.")
     p.add_argument(
@@ -200,6 +207,12 @@ def main() -> int:
         choices=("debug", "info", "warning", "error", "critical"),
         help="change the log level (default: %(default)s)",
         default=None,
+    )
+    p.add_argument(
+        "-p",
+        "--pretty",
+        action="store_true",
+        help="pretty-print JSON",
     )
     sp = p.add_subparsers(title="Subcommands", required=True)
 
