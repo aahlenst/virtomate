@@ -788,7 +788,7 @@ class TestGuestRun:
             "-c",
             'printf "Hello World" | wc -m',
         ]
-        result = subprocess.run(cmd, shell=False, capture_output=True, text=True)
+        result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "guest-run failed unexpectedly"
         assert json.loads(result.stdout) == {
             "exit_code": 0,
@@ -804,7 +804,7 @@ class TestGuestRun:
         wait_until_running(running_vm_for_class)
 
         cmd = ["virtomate", "guest-run", running_vm_for_class, "--", "true"]
-        result = subprocess.run(cmd, shell=False, capture_output=True, text=True)
+        result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "guest-run failed unexpectedly"
         assert json.loads(result.stdout) == {
             "exit_code": 0,
@@ -829,7 +829,7 @@ class TestGuestRun:
             "-c",
             "printf 'out' ; printf 'err' 1>&2",
         ]
-        result = subprocess.run(cmd, shell=False, capture_output=True, text=True)
+        result = subprocess.run(cmd, capture_output=True, text=True)
         assert result.returncode == 0, "guest-run failed unexpectedly"
         assert json.loads(result.stdout) == {
             "exit_code": 0,
