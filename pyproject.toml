@@ -6,7 +6,7 @@ authors = [
     { name = "Andreas Ahlenstorf", email = "andreas@ahlenstorf.ch" }
 ]
 dependencies = [
-    "libvirt-python==9.0.0",
+    "libvirt-python>=9.0.0",
 ]
 readme = "README.md"
 requires-python = ">= 3.10"
