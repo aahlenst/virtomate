@@ -16,9 +16,9 @@ pool_home="/var/lib/libvirt"
 pool_name="virtomate"
 
 # Create pool
-mkdir "$pool_home/$pool_name"
-chmod u=rwx,g=x,o=x "$pool_home/$pool_name"
 virsh pool-define-as "$pool_name" dir --target "$pool_home/$pool_name"
+virsh pool-autostart "$pool_name"
+virsh pool-build "$pool_name"
 virsh pool-start "$pool_name"
 
 # Import volumes
