@@ -74,7 +74,7 @@ def _clean_up(conn: virConnect) -> None:
             continue
 
         (state, _) = domain.state()
-        if state == libvirt.VIR_DOMAIN_RUNNING:
+        if state != libvirt.VIR_DOMAIN_SHUTOFF:
             domain.destroy()
 
         flags = 0
