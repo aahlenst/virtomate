@@ -94,7 +94,7 @@ def _simple_bios_vm(conn: virConnect) -> str:
             <format type='qcow2'/>
         </target>
         <backingStore>
-            <path>/var/lib/libvirt/virtomate/simple-bios</path>
+            <path>/var/lib/libvirt/images/simple-bios</path>
             <format type='qcow2'/>
         </backingStore>
     </volume>
@@ -127,7 +127,7 @@ def _simple_uefi_vm(conn: virConnect) -> str:
                 <format type='qcow2'/>
             </target>
             <backingStore>
-                <path>/var/lib/libvirt/virtomate/simple-uefi</path>
+                <path>/var/lib/libvirt/images/simple-uefi</path>
                 <format type='qcow2'/>
             </backingStore>
         </volume>
@@ -147,7 +147,7 @@ def _simple_uefi_vm(conn: virConnect) -> str:
 
     pool_nvram = conn.storagePoolLookupByName("nvram")
     nvram_vol = conn.storageVolLookupByPath(
-        "/var/lib/libvirt/virtomate/simple-uefi-efivars.fd"
+        "/var/lib/libvirt/images/simple-uefi-efivars.fd"
     )
     pool_nvram.createXMLFrom(nvram_xml, nvram_vol, 0)
 
@@ -171,10 +171,8 @@ def _simple_bios_raw_vm(conn: virConnect) -> str:
         </volume>
         """
 
-    pool_virtomate = conn.storagePoolLookupByName("virtomate")
-    vol_to_clone = pool_virtomate.storageVolLookupByName("simple-bios")
-
     pool_default = conn.storagePoolLookupByName("default")
+    vol_to_clone = pool_default.storageVolLookupByName("simple-bios")
     pool_default.createXMLFrom(vol_xml, vol_to_clone, 0)
     conn.defineXML(fixture("simple-bios-raw.xml"))
 

@@ -669,14 +669,14 @@ class TestPoolList:
         assert result.stderr == ""
 
         pools: Sequence[PoolDescriptor] = json.loads(result.stdout)
-        virtomate_pool = next(p for p in pools if p["name"] == "virtomate")
+        virtomate_pool = next(p for p in pools if p["name"] == "default")
 
         assert virtomate_pool == {
             "active": True,
             "allocation": ANY_INT,
             "available": ANY_INT,
             "capacity": ANY_INT,
-            "name": "virtomate",
+            "name": "default",
             "number_of_volumes": ANY_INT,
             "persistent": True,
             "state": "running",
@@ -890,48 +890,48 @@ class TestVolumeList:
         assert result.stderr == ""
 
     def test_list(self) -> None:
-        cmd = ["virtomate", "volume-list", "virtomate"]
+        cmd = ["virtomate", "volume-list", "default"]
         result = subprocess.run(cmd, capture_output=True, text=True)
-        assert result.returncode == 0, "Could not list volumes of pool virtomate"
+        assert result.returncode == 0, "Could not list volumes of pool default"
         assert result.stderr == ""
 
         volumes = json.loads(result.stdout)
         assert volumes == [
             {
                 "name": "simple-bios",
-                "key": "/var/lib/libvirt/virtomate/simple-bios",
+                "key": "/var/lib/libvirt/images/simple-bios",
                 "capacity": ANY_INT,
                 "allocation": ANY_INT,
                 "physical": ANY_INT,
                 "type": "file",
                 "target": {
-                    "path": "/var/lib/libvirt/virtomate/simple-bios",
+                    "path": "/var/lib/libvirt/images/simple-bios",
                     "format_type": "qcow2",
                 },
                 "backing_store": None,
             },
             {
                 "name": "simple-uefi",
-                "key": "/var/lib/libvirt/virtomate/simple-uefi",
+                "key": "/var/lib/libvirt/images/simple-uefi",
                 "capacity": ANY_INT,
                 "allocation": ANY_INT,
                 "physical": ANY_INT,
                 "type": "file",
                 "target": {
-                    "path": "/var/lib/libvirt/virtomate/simple-uefi",
+                    "path": "/var/lib/libvirt/images/simple-uefi",
                     "format_type": "qcow2",
                 },
                 "backing_store": None,
             },
             {
                 "name": "simple-uefi-efivars.fd",
-                "key": "/var/lib/libvirt/virtomate/simple-uefi-efivars.fd",
+                "key": "/var/lib/libvirt/images/simple-uefi-efivars.fd",
                 "capacity": ANY_INT,
                 "allocation": ANY_INT,
                 "physical": ANY_INT,
                 "type": "file",
                 "target": {
-                    "path": "/var/lib/libvirt/virtomate/simple-uefi-efivars.fd",
+                    "path": "/var/lib/libvirt/images/simple-uefi-efivars.fd",
                     "format_type": "raw",
                 },
                 "backing_store": None,

@@ -6,20 +6,8 @@ if [[ $# -ne 1 ]]; then
     exit 1
 fi
 
-if [ "$(id -u)" -ne 0 ]; then
-  echo "Please run as root." >&2
-  exit 2
-fi
-
 image_home="$1"
-pool_home="/var/lib/libvirt"
-pool_name="virtomate"
-
-# Create pool
-virsh pool-define-as "$pool_name" dir --target "$pool_home/$pool_name"
-virsh pool-autostart "$pool_name"
-virsh pool-build "$pool_name"
-virsh pool-start "$pool_name"
+pool_name="default"
 
 # Import volumes
 find "$image_home" -maxdepth 2 -mindepth 2 -type f -print0 | while read -d $'\0' file
@@ -38,5 +26,5 @@ do
   fi
 
   virsh vol-create-as --pool "$pool_name" "$vol_name" "$size" --format "$vol_format"
-  virsh vol-upload --pool "$pool_name" "$vol_name" "$file"
+  virsh vol-upload --pool "$pool_name" "$vol_name" "$file" --sparse
 done
