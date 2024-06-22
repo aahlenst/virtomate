@@ -16,12 +16,12 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: awalsh128/cache-apt-pkgs-action@v1
-        with:
-          packages: "libvirt-daemon libvirt-clients libvirt-dev"
-          version: 1.0
-
       - uses: actions/checkout@v4
+
+      - name: Install required packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvirt-daemon-system libvirt-clients qemu-utils ovmf libvirt-dev
 
       - name: Set up Rye
         uses: eifinger/setup-rye@v3
@@ -68,20 +68,64 @@ jobs:
       matrix:
         python-version: [ "3.10", "3.12" ]
         libvirt-version: [ "9.0.0", "10.4.0" ]
+    permissions:
+      contents: read
+      packages: read
 
     steps:
-      - uses: awalsh128/cache-apt-pkgs-action@v1
-        with:
-          packages: "libvirt-daemon libvirt-clients libvirt-dev"
-          version: 1.0
-
       - uses: actions/checkout@v4
+
+      - name: Define TEST_MACHINES_HOME, DIST_HOME, LIBVIRT_DEFAULT_URI
+        run: |
+          echo "TEST_MACHINES_HOME=$(mktemp -d)" >> $GITHUB_ENV
+          echo "DIST_HOME=$(mktemp -d)" >> $GITHUB_ENV
+          echo "LIBVIRT_DEFAULT_URI=qemu:///system" >> $GITHUB_ENV
 
       - name: Download artifact produced by build job
         uses: actions/download-artifact@v4
         with:
           name: dist
-          path: dist
+          path: "${{ env.DIST_HOME }}"
+
+      - name: Install required packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvirt-daemon-system libvirt-clients qemu-utils ovmf libvirt-dev
+
+      - name: Install oras
+        run: |
+          sudo snap install oras --classic
+
+      - name: Download test machines
+        run: |
+          mkdir -p "${{ env.TEST_MACHINES_HOME }}"
+          pushd "${{ env.TEST_MACHINES_HOME }}"
+          oras login --username "${{ github.actor }}" --password "${{ secrets.GITHUB_TOKEN }}" ghcr.io
+          oras pull ghcr.io/aahlenst/virtomate-test-machines:1
+          popd
+
+      - name: Configure firmware
+        run: |
+          cat "${{ env.TEST_MACHINES_HOME }}/51-edk2-ovmf-2m-raw-x64-nosb.json"
+          sudo cp "${{ env.TEST_MACHINES_HOME }}/51-edk2-ovmf-2m-raw-x64-nosb.json" /usr/share/qemu/firmware/
+          sudo cp "${{ env.TEST_MACHINES_HOME }}/OVMF_CODE.fd" /usr/share/OVMF/
+          sudo cp "${{ env.TEST_MACHINES_HOME }}/OVMF_VARS.fd" /usr/share/OVMF/
+
+      - name: Prepare libvirt storage pools
+        run: |
+          sudo virsh pool-define-as default dir --target /var/lib/libvirt/images
+          sudo virsh pool-autostart default
+          sudo virsh pool-build default
+          sudo virsh pool-start default
+          
+          sudo virsh pool-define-as nvram dir --target /var/lib/libvirt/qemu/nvram
+          sudo virsh pool-autostart nvram
+          sudo virsh pool-build nvram
+          sudo virsh pool-start nvram
+
+      - name: Import virtual machine images
+        run: |
+          sudo ./prepare-pool.sh "${{ env.TEST_MACHINES_HOME }}"
 
       - name: Remove src folder to ensure that only the built package is used
         run: |
@@ -94,18 +138,28 @@ jobs:
       - name: Initialise virtual environment
         run: |
           python -m venv .venv
-          source .venv/bin/activate
 
       # Install desired versions and the built package with pip. This ensures that we validate what we have built.
       # Ideally, development dependencies would be extracted from pyproject.toml. But I could not get pip to do that.
       # There is no obvious way to do it with rye, either.
       - name: Install dependencies
         run: |
+          source .venv/bin/activate
           pip install "libvirt-python==${{ matrix.libvirt-version }}"
-          pip install dist/virtomate*.whl
+          pip install "${{ env.DIST_HOME }}"/virtomate*.whl
           pip install "pytest==8.2.0"
           pip install "tenacity==8.3.0"
 
+      # Necessary to detect a misconfigured pyproject.toml. That could cause a silent downgrade of libvirt-python.
+      # We could do a `pip install --no-deps` but then we would not detect the misconfigured pyproject.toml.
+      - name: Ensure libvirt-python ${{ matrix.libvirt-version }} has been installed
+        run: |
+          source .venv/bin/activate
+          pip list --format freeze | grep "libvirt-python==${{ matrix.libvirt-version }}"
+
+      # Tests have to be run as root to access qemu:///system because the current user is not a member of libvirt.
+      # Manually adding the user to libvirt does not help because the session cannot be reloaded.
+      # The GH Actions runners use ext4 as filesystem. Therefore, --linked tests have to be skipped.
       - name: Run tests
         run: |
-          pytest tests
+          sudo bash -c "source .venv/bin/activate && pytest tests --functional"
