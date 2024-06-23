@@ -227,15 +227,15 @@ class FixedMACFactory(MACFactory):
 
 class TestSourceFirmware:
     def test_pool_path(self) -> None:
-        source_fw = SourceFirmware("/somewhere/nvram/OVMF_VARS.fd", "my-clone")
+        source_fw = SourceFirmware("/somewhere/nvram/OVMF_VARS.fd", "raw", "my-clone")
         assert source_fw.pool_path == "/somewhere/nvram"
 
     def test_cloned_volume_name(self) -> None:
-        source_fw = SourceFirmware("/somewhere/nvram/OVMF_VARS.fd", "my-clone")
+        source_fw = SourceFirmware("/somewhere/nvram/OVMF_VARS.fd", "raw", "my-clone")
         assert source_fw.cloned_volume_name == "my-clone-OVMF_VARS.fd"
 
     def test_clone_path(self) -> None:
-        source_fw = SourceFirmware("/somewhere/nvram/OVMF_VARS.fd", "my-clone")
+        source_fw = SourceFirmware("/somewhere/nvram/OVMF_VARS.fd", "raw", "my-clone")
         assert source_fw.clone_path == "/somewhere/nvram/my-clone-OVMF_VARS.fd"
 
 

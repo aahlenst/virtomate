@@ -384,6 +384,7 @@ class SourceFirmware:
     """Firmware of a virtual machine about to be cloned."""
 
     source_path: str
+    source_type: str
     clone_name: str
 
     @property
@@ -463,10 +464,11 @@ class CloneOperation:
             if fw_disk.text is None:
                 continue
 
-            # There is a `format` attribute on <loader> and <nvram> that allows to load firmware from raw or QCOW2
-            # files. This would only concern virtomate if we ever decided to apply `CloneMode` to firmware.
-            # Is there any reason to? The files are usually tiny (2 MB tops).
-            source_firmware = SourceFirmware(fw_disk.text, new_name)
+            source_format = "raw"
+            if "format" in fw_disk.attrib:
+                source_format = fw_disk.attrib["format"]
+
+            source_firmware = SourceFirmware(fw_disk.text, source_format, new_name)
             self._firmware_to_clone.append(source_firmware)
 
             fw_disk.text = source_firmware.clone_path
@@ -570,12 +572,18 @@ class CloneOperation:
 
             raise
 
+    # If you ever think of combining volume and firmware copying, don't! Even though they look similar, they are not.
+    # While disk copying allows format changes, they would be problematic in case of EFI firmware. Changing the format
+    # of the VARS portion of the firmware would require to use a different loader which might not even be available on
+    # the system.
     @staticmethod
     def _copy_firmware(conn: virConnect, source_fw: SourceFirmware) -> None:
-        mac_tag = ElementTree.Element("volume")
-        name_tag = ElementTree.SubElement(mac_tag, "name")
+        volume_tag = ElementTree.Element("volume")
+        name_tag = ElementTree.SubElement(volume_tag, "name")
         name_tag.text = source_fw.cloned_volume_name
-        volume_xml = ElementTree.tostring(mac_tag, encoding="unicode")
+        target_tag = ElementTree.SubElement(volume_tag, "target")
+        ElementTree.SubElement(target_tag, "format", {"type": source_fw.source_type})
+        volume_xml = ElementTree.tostring(volume_tag, encoding="unicode")
 
         pool = conn.storagePoolLookupByTargetPath(source_fw.pool_path)
         fw_to_copy = conn.storageVolLookupByPath(source_fw.source_path)
