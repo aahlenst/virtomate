@@ -1,4 +1,5 @@
 import json
+import logging
 import os.path
 import subprocess
 from collections.abc import Iterable
@@ -13,6 +14,8 @@ from virtomate.error import ProgramError, Conflict, NotFoundError
 from virtomate.pool import pool_exists
 
 _EOF_POSITION = -1
+
+logger = logging.getLogger(__name__)
 
 
 class TargetDescriptor(TypedDict):
@@ -201,6 +204,8 @@ def import_volume(
     # Volume will be resized automatically during upload. A size of 0 ensures that a sparse volume stays sparse.
     capacity_tag.text = "0"
     volume_xml = ElementTree.tostring(volume_tag, encoding="unicode")
+
+    logger.debug("Creating volume %s with configuration:\n%s", volume_name, volume_xml)
 
     pool = conn.storagePoolLookupByName(pool_name)
     volume = pool.createXML(volume_xml, 0)

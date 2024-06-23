@@ -233,6 +233,8 @@ def clone_domain(
     uuid_factory = LibvirtUUIDFactory(conn)
     mac_factory = LibvirtMACFactory(conn)
 
+    logger.debug("Going to clone %s with configuration:\n%s", name, domain_xml)
+
     op = CloneOperation(config, new_name, mode, uuid_factory, mac_factory)
     op.perform(conn)
 
@@ -530,6 +532,11 @@ class CloneOperation:
 
     def perform(self, conn: virConnect) -> None:
         try:
+            logger.debug(
+                "Defining cloned domain %s with configuration:\n%s",
+                self._clone_name,
+                self.clone_config(),
+            )
             conn.defineXML(self.clone_config())
 
             for fw in self._firmware_to_clone:
@@ -572,6 +579,11 @@ class CloneOperation:
 
         pool = conn.storagePoolLookupByTargetPath(source_fw.pool_path)
         fw_to_copy = conn.storageVolLookupByPath(source_fw.source_path)
+        logger.debug(
+            "Copying firmware volume %s with configuration:\n%s",
+            fw_to_copy.name(),
+            volume_xml,
+        )
         pool.createXMLFrom(volume_xml, fw_to_copy, 0)
 
     @staticmethod
@@ -593,6 +605,11 @@ class CloneOperation:
 
         pool = conn.storagePoolLookupByTargetPath(source_volume.pool_path)
         volume_to_copy = conn.storageVolLookupByPath(source_volume.source_path)
+        logger.debug(
+            "Copying volume %s with configuration:\n%s",
+            volume_to_copy.name(),
+            volume_xml,
+        )
         pool.createXMLFrom(volume_xml, volume_to_copy, create_flags)
 
     @staticmethod
@@ -611,11 +628,17 @@ class CloneOperation:
         volume_xml = ElementTree.tostring(volume_tag, encoding="unicode")
 
         pool = conn.storagePoolLookupByTargetPath(source_volume.pool_path)
+        logger.debug(
+            "Linking volume %s with configuration:\n%s",
+            source_volume.source_path,
+            volume_xml,
+        )
         pool.createXML(volume_xml)
 
     @staticmethod
     def _undefine_domain(conn: virConnect, name: str) -> None:
         try:
+            logger.debug("Undefining domain %s", name)
             domain = conn.lookupByName(name)
             domain.undefine()
         except BaseException as ex:
@@ -628,6 +651,7 @@ class CloneOperation:
     @staticmethod
     def _delete_volume(conn: virConnect, volume_path: str) -> None:
         try:
+            logger.debug("Deleting volume %s", volume_path)
             volume = conn.storageVolLookupByPath(volume_path)
             volume.delete()
         except BaseException as ex:
