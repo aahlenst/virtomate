@@ -196,7 +196,7 @@ jobs:
 
 
   github-release:
-    name: Release
+    name: Create GitHub Release
     if: startsWith(github.ref, 'refs/tags/') && github.repository == 'aahlenst/virtomate'
     runs-on: ubuntu-24.04
     needs:
