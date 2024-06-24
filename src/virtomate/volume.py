@@ -56,6 +56,10 @@ def list_volumes(conn: virConnect, pool_name: str) -> Iterable[VolumeDescriptor]
 
     volumes = []
     pool = conn.storagePoolLookupByName(pool_name)
+
+    # A refresh gets rid of orphaned volumes that have been deleted without involvement of libvirt.
+    pool.refresh(0)
+
     for volume in pool.listAllVolumes(0):
         # Schema: https://gitlab.com/libvirt/libvirt/-/blob/master/src/conf/schemas/storagevol.rng
         volume_xml = volume.XMLDesc()
