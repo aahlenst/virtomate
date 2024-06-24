@@ -51,6 +51,13 @@ jobs:
         run: |
           rye build
 
+      - name: Generate checksums
+        run: |
+          pushd dist
+          sha256sum * > SHA256SUMS
+          sha512sum * > SHA512SUMS
+          popd
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -86,6 +93,13 @@ jobs:
         with:
           name: dist
           path: "${{ env.DIST_HOME }}"
+
+      - name: Verify downloaded artifacts produced by build job
+        run: |
+          pushd "${{ env.DIST_HOME }}"
+          sha256sum -c SHA256SUMS
+          sha512sum -c SHA512SUMS
+          popd
 
       - name: Install required packages
         run: |
@@ -163,3 +177,43 @@ jobs:
       - name: Run tests
         run: |
           sudo bash -c "source .venv/bin/activate && pytest tests --functional"
+
+  release:
+    name: Release
+    if: startsWith(github.ref, 'refs/tags/') && github.repository == 'aahlenst/virtomate'
+    runs-on: ubuntu-24.04
+    needs:
+      - check
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Define DIST_HOME
+        run: |
+          echo "DIST_HOME=$(mktemp -d)" >> $GITHUB_ENV
+
+      - name: Download artifact produced by build job
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: "${{ env.DIST_HOME }}"
+
+      - name: Verify downloaded artifacts produced by build job
+        run: |
+          pushd "${{ env.DIST_HOME }}"
+          sha256sum -c SHA256SUMS
+          sha512sum -c SHA512SUMS
+          popd
+
+      - name: Extract release notes
+        id: release_notes
+        uses: ffurrer2/extract-release-notes@v2
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          body: ${{ steps.release_notes.outputs.release_notes }}
+          files: "${{ env.DIST_HOME }}/*"
+          fail_on_unmatched_files: true
