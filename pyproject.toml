@@ -20,6 +20,11 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 
+[project.urls]
+Homepage = "https://virtomate.org/"
+Documentation = "https://virtomate.org/"
+Repository = "https://github.com/aahlenst/virtomate"
+
 [project.scripts]
 "virtomate" = "virtomate:main"
 
