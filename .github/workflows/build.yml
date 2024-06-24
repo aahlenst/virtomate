@@ -51,13 +51,6 @@ jobs:
         run: |
           rye build
 
-      - name: Generate checksums
-        run: |
-          pushd dist
-          sha256sum * > SHA256SUMS
-          sha512sum * > SHA512SUMS
-          popd
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -88,18 +81,11 @@ jobs:
           echo "DIST_HOME=$(mktemp -d)" >> $GITHUB_ENV
           echo "LIBVIRT_DEFAULT_URI=qemu:///system" >> $GITHUB_ENV
 
-      - name: Download artifact produced by build job
+      - name: Download artifacts produced by build job
         uses: actions/download-artifact@v4
         with:
           name: dist
           path: "${{ env.DIST_HOME }}"
-
-      - name: Verify downloaded artifacts produced by build job
-        run: |
-          pushd "${{ env.DIST_HOME }}"
-          sha256sum -c SHA256SUMS
-          sha512sum -c SHA512SUMS
-          popd
 
       - name: Install required packages
         run: |
@@ -178,14 +164,46 @@ jobs:
         run: |
           sudo bash -c "source .venv/bin/activate && pytest tests --functional"
 
-  release:
+  publish-to-pypi:
+    name: Publish Python distribution to PyPI
+    if: startsWith(github.ref, 'refs/tags/') && github.repository == 'aahlenst/virtomate'
+    needs:
+      - check
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/virtomate
+    permissions:
+      contents: read
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+
+    steps:
+      - name: Define DIST_HOME
+        run: |
+          echo "DIST_HOME=$(mktemp -d)" >> $GITHUB_ENV
+
+      - name: Download artifacts produced by build job
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: "${{ env.DIST_HOME }}"
+
+      - name: Publish release to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: "${{ env.DIST_HOME }}"
+          print-hash: true
+
+
+  github-release:
     name: Release
     if: startsWith(github.ref, 'refs/tags/') && github.repository == 'aahlenst/virtomate'
     runs-on: ubuntu-24.04
     needs:
-      - check
+      - publish-to-pypi
     permissions:
-      contents: write
+      contents: write  # IMPORTANT: mandatory for making GitHub Releases
+      id-token: write  # IMPORTANT: mandatory for sigstore
 
     steps:
       - uses: actions/checkout@v4
@@ -194,18 +212,18 @@ jobs:
         run: |
           echo "DIST_HOME=$(mktemp -d)" >> $GITHUB_ENV
 
-      - name: Download artifact produced by build job
+      - name: Download artifacts produced by build job
         uses: actions/download-artifact@v4
         with:
           name: dist
           path: "${{ env.DIST_HOME }}"
 
-      - name: Verify downloaded artifacts produced by build job
-        run: |
-          pushd "${{ env.DIST_HOME }}"
-          sha256sum -c SHA256SUMS
-          sha512sum -c SHA512SUMS
-          popd
+      - name: Sign the artifacts with Sigstore
+        uses: sigstore/gh-action-sigstore-python@v2.1.1
+        with:
+          inputs: |
+            "${{ env.DIST_HOME }}"/*.tar.gz
+            "${{ env.DIST_HOME }}"/*.whl
 
       - name: Extract release notes
         id: release_notes
