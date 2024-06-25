@@ -51,9 +51,9 @@ $ pipx install virtomate
 
 For more installation options, see the [Virtomate documentation](https://virtomate.org/).
 
-## License
+## Getting Help
 
-Virtomate is licensed under the [GNU General Public License, version 2 only](https://spdx.org/licenses/GPL-2.0-only.html).
+Please see the [contribution guide](CONTRIBUTING.md).
 
 ## Contributing
 
@@ -101,3 +101,7 @@ Functional tests require a working libvirt installation with QEMU. See the secti
 By default, the functional tests connect to `qemu:///system`. If your local user cannot access `qemu:///system`, it is usually sufficient to add it to the group `libvirt`.
 
 If you want to run the functional tests against a different libvirt instance, define the environment variable `LIBVIRT_DEFAULT_URI` accordingly. See [the libvirt documentation on Connection URIs](https://libvirt.org/uri.html) on how to do this.
+
+## License
+
+Virtomate is licensed under the [GNU General Public License, version 2 only](https://spdx.org/licenses/GPL-2.0-only.html).
