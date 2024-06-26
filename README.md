@@ -74,6 +74,16 @@ To run the complete test suite, including the functional tests, you need a machi
 
 To run the complete test suite, including the functional tests, you have to build a couple of virtual machine images and configure libvirt accordingly. This is an optional step, and you can skip it if you do not want to run the functional tests.
 
+#### Install libvirt, QEMU
+
+Refer to the instructions of the respective Linux distribution:
+
+- [Debian](https://wiki.debian.org/KVM)
+- [Fedora](https://docs.fedoraproject.org/en-US/quick-docs/virtualization-getting-started/)
+- [Ubuntu](https://help.ubuntu.com/community/KVM/Installation)
+
+Check that the command-line tools `virsh` and `qemu-img` are on `PATH` and working.
+
 #### Create Storage Pools
 
 The test suite expects the presence of the following storage pools:
