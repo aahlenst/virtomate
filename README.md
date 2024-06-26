@@ -72,7 +72,47 @@ To run the complete test suite, including the functional tests, you need a machi
 
 ### Preparation
 
-To run the complete test suite, including the functional tests, you have to build a couple of virtual machine images and configure libvirt accordingly. This is an optional step and can be skipped if you do not want to run the functional tests.
+To run the complete test suite, including the functional tests, you have to build a couple of virtual machine images and configure libvirt accordingly. This is an optional step, and you can skip it if you do not want to run the functional tests.
+
+#### Create Storage Pools
+
+The test suite expects the presence of the following storage pools:
+
+- `default` in `/var/lib/libvirt/images`
+- `nvram` in `/var/lib/libvirt/qemu/nvram`
+
+If they do not exist, you can create them as follows:
+
+```
+$ virsh pool-define-as default dir --target /var/lib/libvirt/images
+$ virsh pool-autostart default
+$ virsh pool-build default
+$ virsh pool-start default
+
+$ virsh pool-define-as nvram dir --target /var/lib/libvirt/qemu/nvram
+$ virsh pool-autostart nvram
+$ virsh pool-build nvram
+$ virsh pool-start nvram
+```
+
+#### Create Virtual Machine Images
+
+The functional tests require some virtual machine images to run. There are [Packer](https://packer.io/) templates in [packer/](packer/) to create them in a couple of minutes:
+
+```
+$ pushd packer
+$ packer build simple-bios.pkr.hcl
+$ packer build simple-uefi.pkr.hcl
+$ popd
+```
+
+Packer will save the virtual machine images to `packer/dist`.
+
+Then, import them into libvirt by running:
+
+```
+$ sudo ./prepare-pool.sh packer/dist
+```
 
 ### Create a Build
 
@@ -89,6 +129,10 @@ To run the unit tests, run:
 ```
 $ rye test
 ```
+
+### Run the Functional Tests
+
+**WARNING**: Running the functional tests can cause **data loss**. The test suite will treat all virtual machines and storage volumes whose names start with `virtomate-` as test artefacts and **delete** them after each test.
 
 To run the functional tests, activate the virtual environment with `source .venv/bin/activate` (on Unix-like operating systems) or `. .\env\Scripts\activate.ps1` on Windows. Then run:
 
