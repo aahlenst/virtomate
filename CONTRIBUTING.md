@@ -11,10 +11,6 @@ We would like to hear about your propositions and suggestions. Feel free to subm
 
 Please note that we do not intend to replace `virsh`.
 
-## Getting Help
-
-If you need help, please start a [discussion on GitHub](https://github.com/aahlenst/virtomate/discussions).
-
 ## Report Bugs
 
 Report bugs in the [issue tracker](https://github.com/aahlenst/virtomate/issues).
