@@ -96,6 +96,10 @@ jobs:
         run: |
           sudo snap install oras --classic
 
+      - name: Install yq
+        run: |
+          sudo snap install yq
+
       - name: Download test machines
         run: |
           mkdir -p "${{ env.TEST_MACHINES_HOME }}"
@@ -147,9 +151,7 @@ jobs:
           source .venv/bin/activate
           pip install "libvirt-python==${{ matrix.libvirt-version }}"
           pip install "${{ env.DIST_HOME }}"/virtomate*.whl
-          pip install "pytest==8.2.0"
-          pip install "pytest-cov==5.0.0"
-          pip install "tenacity==8.3.0"
+          yq -p toml '.tool.rye.dev-dependencies[]' < pyproject.toml | xargs pip install
 
       # Necessary to detect a misconfigured pyproject.toml. That could cause a silent downgrade of libvirt-python.
       # We could do a `pip install --no-deps` but then we would not detect the misconfigured pyproject.toml.
