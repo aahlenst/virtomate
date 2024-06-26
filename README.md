@@ -90,7 +90,7 @@ To run the unit tests, run:
 $ rye test
 ```
 
-To run the functional tests, run:
+To run the functional tests, activate the virtual environment with `source .venv/bin/activate` (on Unix-like operating systems) or `. .\env\Scripts\activate.ps1` on Windows. Then run:
 
 ```
 $ rye test -- --functional
