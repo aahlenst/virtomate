@@ -117,7 +117,7 @@ jobs:
           sudo virsh pool-autostart default
           sudo virsh pool-build default
           sudo virsh pool-start default
-          
+
           sudo virsh pool-define-as nvram dir --target /var/lib/libvirt/qemu/nvram
           sudo virsh pool-autostart nvram
           sudo virsh pool-build nvram
@@ -148,6 +148,7 @@ jobs:
           pip install "libvirt-python==${{ matrix.libvirt-version }}"
           pip install "${{ env.DIST_HOME }}"/virtomate*.whl
           pip install "pytest==8.2.0"
+          pip install "pytest-cov==5.0.0"
           pip install "tenacity==8.3.0"
 
       # Necessary to detect a misconfigured pyproject.toml. That could cause a silent downgrade of libvirt-python.
@@ -162,7 +163,14 @@ jobs:
       # The GH Actions runners use ext4 as filesystem. Therefore, --linked tests have to be skipped.
       - name: Run tests
         run: |
-          sudo bash -c "source .venv/bin/activate && pytest tests --functional"
+          sudo bash -c "source .venv/bin/activate && pytest --cov virtomate --cov-report html tests/ --functional"
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: "htmlcov-python-${{ matrix.python-version }}-libvirt-${{ matrix.libvirt-version }}"
+          path: htmlcov/
+          if-no-files-found: error
 
   publish-to-pypi:
     name: Publish Python distribution to PyPI

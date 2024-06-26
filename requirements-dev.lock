@@ -8,6 +8,9 @@
 #   with-sources: false
 
 -e file:.
+coverage==7.5.4
+    # via coverage
+    # via pytest-cov
 exceptiongroup==1.2.1
     # via pytest
 iniconfig==2.0.0
@@ -22,8 +25,11 @@ packaging==24.0
 pluggy==1.5.0
     # via pytest
 pytest==8.2.0
+    # via pytest-cov
+pytest-cov==5.0.0
 tenacity==8.3.0
 tomli==2.0.1
+    # via coverage
     # via mypy
     # via pytest
 typing-extensions==4.11.0
