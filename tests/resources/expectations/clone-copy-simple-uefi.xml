@@ -11,8 +11,8 @@
   <vcpu placement='static'>1</vcpu>
   <os firmware='efi'>
     <type arch='x86_64' machine='q35'>hvm</type>
-    <loader readonly='yes' type='pflash'>/usr/share/OVMF/OVMF_CODE.fd</loader>
-    <nvram template='/usr/share/OVMF/OVMF_VARS.fd'>/var/lib/libvirt/qemu/nvram/virtomate-clone-copy-virtomate-simple-uefi-efivars.fd</nvram>
+    <loader secure='no' format='raw'/>
+    <nvram format='raw'>/var/lib/libvirt/qemu/nvram/virtomate-clone-copy-virtomate-simple-uefi-efivars.fd</nvram>
     <boot dev='hd'/>
   </os>
   <features>
