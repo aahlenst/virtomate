@@ -17,7 +17,7 @@ It works on Linux, macOS, and `Windows Subsystem for Linux <https://learn.micros
 With pipx
 ---------
 
-``pipx`` installs and runs Python applications like Virtomate in isolated environments. Please see the `pipx documentation <https://pipx.pypa.io/>`_ for how to install ``pipx``.
+:program:`pipx` installs and runs Python applications like Virtomate in isolated environments. Please see the `pipx documentation <https://pipx.pypa.io/>`_ for how to install ``pipx``.
 
 .. code-block::
 

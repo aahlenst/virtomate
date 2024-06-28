@@ -16,9 +16,9 @@ To list all domains on your system, run
     $ virtomate domain-list
     []
 
-Virtomate always returns `JSON <https://www.json.org/>`_. ``[]`` is an empty list. This means that there is no domain.
+Virtomate always returns `JSON <https://www.json.org/>`_. :code:`[]` is an empty list. This means that there is no domain.
 
-Because Virtomate relies on `libvirt <https://libvirt.org/>`_, it connects to the session-mode daemon ``qemu:///session`` by default. If you want to connect to another instance, you can either define the environment variable ``LIBVIRT_DEFAULT_URI`` or use the command-line option ``-c``:
+Because Virtomate relies on `libvirt <https://libvirt.org/>`_, it connects to the session-mode daemon ``qemu:///session`` by default. If you want to connect to another instance, you can either define the environment variable :envvar:`LIBVIRT_DEFAULT_URI` or use the command-line option ``-c``:
 
 .. code-block::
 
@@ -67,7 +67,7 @@ As mentioned, Virtomate returns JSON that is meant to be parsed by other tools. 
     $ virtomate domain-list | jq 'map(select(.state | contains("running"))) | .[].name'
     "ubuntu-24.04"
 
-You are now only an ``xargs`` away from shutting down all virtual machines that are running:
+You are now only an :command:`xargs` away from shutting down all virtual machines that are running:
 
 .. code-block::
 

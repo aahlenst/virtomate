@@ -56,6 +56,7 @@ Even if virtual machines are running on a remote host, don't let that stop you. 
 
    installation
    getting-started
+   man/index
 
 .. toctree::
    :hidden:

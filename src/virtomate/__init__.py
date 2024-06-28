@@ -22,8 +22,12 @@ libvirt.registerErrorHandler(f=lambda ctx, err: ..., ctx=None)
 
 
 class ErrorMessage(TypedDict):
+    """Standardised error message that will be printed in case of an error."""
+
     type: str
+    """Type of error, typically the name of the raised exception."""
     message: str | None
+    """Human-readable message describing the error."""
 
 
 @contextmanager
