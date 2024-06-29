@@ -6,4 +6,5 @@ Man Pages
 
    virtomate
    virtomate-domain-list
+   virtomate-domain-clone
 
