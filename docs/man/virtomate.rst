@@ -88,6 +88,13 @@ Details about the error statuses:
 2
    Indicates an usage error; usage information will be printed to standard error.
 
+Environment
+-----------
+
+.. describe:: LIBVIRT_DEFAULT_URI
+
+   Set the URI of the hypervisor :program:`virtomate` connects to. See the `libvirt documentation <https://libvirt.org/uri.html>`_ for supported URIs.
+
 Versions
 --------
 
