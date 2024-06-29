@@ -40,7 +40,8 @@ class DomainDescriptor(TypedDict):
     name: str
     """Name of the domain"""
     state: str
-    """Current state of the domain"""
+    """Current state of the domain. Possible values are: ``no state``, ``running``, ``blocked``, ``paused``,
+    ``shutdown``, ``shut-off``, ``crashed``, and ``suspended``."""
 
 
 class AddressDescriptor(TypedDict):
