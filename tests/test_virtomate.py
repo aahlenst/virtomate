@@ -938,7 +938,12 @@ class TestVolumeList:
         assert result.stderr == ""
 
         volumes = json.loads(result.stdout)
-        assert volumes == [
+
+        # Filter the volumes in case there are others in the storage pool.
+        expected_names = ("simple-bios", "simple-uefi", "simple-uefi-efivars.fd")
+        filtered_volumes = [v for v in volumes if v["name"] in expected_names]
+
+        assert filtered_volumes == [
             {
                 "name": "simple-bios",
                 "key": "/var/lib/libvirt/images/simple-bios",
