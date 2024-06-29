@@ -36,31 +36,21 @@ Options
 
    Use ``URI`` to connect to the hypervisor instead of using the default. See the `libvirt documentation <https://libvirt.org/uri.html>`_ for details about the hypervisor selection logic.
 
-   .. versionadded:: 0.1.0
-
 .. option:: -h, --help
 
    Display usage summary and exit.
-
-   .. versionadded:: 0.1.0
 
 .. option:: -l LEVEL, --log LEVEL
 
    Enable logging to ``stderr`` and log all messages of ``LEVEL`` and above. Valid options are: ``debug``, ``info``, ``warning``, ``error``, ``critical``.
 
-   .. versionadded:: 0.1.0
-
 .. option:: -p, --pretty
 
    Enable pretty-printing of the JSON output.
 
-   .. versionadded:: 0.1.0
-
 .. option:: -v, --version
 
    Display Virtomate's version and exit.
-
-   .. versionadded:: 0.1.0
 
 Commands
 --------
@@ -97,6 +87,11 @@ Details about the error statuses:
 
 2
    Indicates an usage error; usage information will be printed to standard error.
+
+Versions
+--------
+
+Added in version 0.1.0.
 
 Examples
 --------

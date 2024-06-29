@@ -29,6 +29,11 @@ Options
 
    Display usage summary of this command and exit.
 
+Versions
+--------
+
+Added in version 0.1.0.
+
 Examples
 --------
 
