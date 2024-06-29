@@ -214,6 +214,11 @@ class TestPrettyOption:
         },
     ]
 
+    expected_error = {
+        "type": "NotFoundError",
+        "message": "Domain 'unknown' does not exist",
+    }
+
     def test_default_not_pretty(self) -> None:
         cmd = ["virtomate", "-c", "test:///default", "domain-list"]
         result = subprocess.run(cmd, capture_output=True, text=True)
@@ -247,6 +252,43 @@ class TestPrettyOption:
         assert result.returncode == 0, "domain-list failed unexpectedly"
         assert result.stdout == json.dumps(
             self.expected, indent=2, separators=(",", ": "), sort_keys=True
+        )
+        assert result.stderr == ""
+
+    def test_error_default_not_pretty(self) -> None:
+        cmd = ["virtomate", "-c", "test:///default", "guest-ping", "unknown"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 1, "guest-ping succeeded unexpectedly"
+        assert result.stdout.strip() == json.dumps(
+            self.expected_error,
+            indent=None,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+        assert result.stderr == ""
+
+    def test_error_short_form(self) -> None:
+        cmd = ["virtomate", "-c", "test:///default", "-p", "guest-ping", "unknown"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 1, "guest-ping succeeded unexpectedly"
+        assert result.stdout.strip() == json.dumps(
+            self.expected_error, indent=2, separators=(",", ": "), sort_keys=True
+        )
+        assert result.stderr == ""
+
+    def test_error_long_form(self) -> None:
+        cmd = [
+            "virtomate",
+            "-c",
+            "test:///default",
+            "--pretty",
+            "guest-ping",
+            "unknown",
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        assert result.returncode == 1, "guest-ping succeeded unexpectedly"
+        assert result.stdout.strip() == json.dumps(
+            self.expected_error, indent=2, separators=(",", ": "), sort_keys=True
         )
         assert result.stderr == ""
 

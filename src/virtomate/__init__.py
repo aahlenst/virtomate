@@ -72,7 +72,7 @@ def connect(uri: str | None = None) -> Generator[virConnect, None, None]:
 def _list_domains(args: argparse.Namespace) -> int:
     with connect(args.connection) as conn:
         result = domain.list_domains(conn)
-        _print_output(result, pretty=args.pretty)
+        _print_json(result, pretty=args.pretty)
         return 0
 
 
@@ -107,7 +107,7 @@ def _list_domain_interfaces(args: argparse.Namespace) -> int:
 
     with connect(args.connection) as conn:
         result = domain.list_domain_interfaces(conn, args.domain, source)
-        _print_output(result, pretty=args.pretty)
+        _print_json(result, pretty=args.pretty)
         return 0
 
 
@@ -133,21 +133,21 @@ def _run_in_guest(args: argparse.Namespace) -> int:
             encode=args.encode,
             stdin=stdin,
         )
-        _print_output(result, pretty=args.pretty)
+        _print_json(result, pretty=args.pretty)
         return 0
 
 
 def _list_pools(args: argparse.Namespace) -> int:
     with connect(args.connection) as conn:
         result = pool.list_pools(conn)
-        _print_output(result, pretty=args.pretty)
+        _print_json(result, pretty=args.pretty)
         return 0
 
 
 def _list_volumes(args: argparse.Namespace) -> int:
     with connect(args.connection) as conn:
         result = volume.list_volumes(conn, args.pool)
-        _print_output(result, pretty=args.pretty)
+        _print_json(result, pretty=args.pretty)
         return 0
 
 
@@ -157,7 +157,9 @@ def _import_volume(args: argparse.Namespace) -> int:
         return 0
 
 
-def _handle_exception(ex: BaseException, output: typing.IO[str] = sys.stdout) -> int:
+def _handle_exception(
+    ex: BaseException, output: typing.IO[str] = sys.stdout, pretty: bool = False
+) -> int:
     """Handle the given exception by converting it into JSON and printing it to ``output``.
 
     Args:
@@ -169,7 +171,7 @@ def _handle_exception(ex: BaseException, output: typing.IO[str] = sys.stdout) ->
     """
     logger.error("An error occurred, see exception below for details", exc_info=ex)
     message: ErrorMessage = {"type": ex.__class__.__name__, "message": str(ex)}
-    json.dump(message, output)
+    _print_json(message, output=output, pretty=pretty)
     return 1
 
 
@@ -184,7 +186,7 @@ def _configure_logging(args: argparse.Namespace) -> None:
     logging.basicConfig(level=numeric_level, force=True)
 
 
-def _print_output(
+def _print_json(
     result: typing.Any, output: typing.IO[str] = sys.stdout, pretty: bool = False
 ) -> None:
     indent = 2 if pretty else None
@@ -349,7 +351,7 @@ def main() -> int:
         logger.debug("Recognised arguments: %s", args)
         status_code = args.func(args)
     except BaseException as ex:
-        status_code = _handle_exception(ex, sys.stdout)
+        status_code = _handle_exception(ex, sys.stdout, pretty=args.pretty)
 
     # Ensure that all functions return a status code. This also helps mypy to narrow the type from Any.
     assert isinstance(status_code, int)
