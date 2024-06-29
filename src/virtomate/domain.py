@@ -50,7 +50,7 @@ class AddressDescriptor(TypedDict):
     address: str
     """Address assigned to this interface"""
     prefix: int
-    """Prefix (netmask) of the address"""
+    """Prefix length (netmask) of the address"""
     type: str
     """Human-readable type of the address (either `IPv4` or `IPv6`)"""
 

@@ -62,7 +62,7 @@ Commands
 +---------------------------------------------------------+------------------------------------------------+
 | :doc:`domain-clone <virtomate-domain-clone>`            | Clone a domain.                                |
 +---------------------------------------------------------+------------------------------------------------+
-| domain-iface-list                                       | List network interfaces of a running domain.   |
+| :doc:`domain-iface-list <virtomate-domain-iface-list>`  | List network interfaces of a running domain.   |
 +---------------------------------------------------------+------------------------------------------------+
 | guest-ping                                              | Ping the QEMU Guest Agent of a running domain. |
 +---------------------------------------------------------+------------------------------------------------+
