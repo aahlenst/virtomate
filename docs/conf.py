@@ -1,3 +1,5 @@
+import importlib.metadata
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -9,7 +11,7 @@
 project = "Virtomate"
 copyright = "2024, Virtomate Contributors"
 author = "Andreas Ahlenstorf"
-release = "0.1.0"
+release = importlib.metadata.version("virtomate")
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
