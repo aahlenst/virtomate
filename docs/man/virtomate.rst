@@ -64,9 +64,9 @@ Commands
 +---------------------------------------------------------+------------------------------------------------+
 | :doc:`domain-iface-list <virtomate-domain-iface-list>`  | List network interfaces of a running domain.   |
 +---------------------------------------------------------+------------------------------------------------+
-| guest-ping                                              | Ping the QEMU Guest Agent of a running domain. |
+| :doc:`guest-ping <virtomate-guest-ping>`                | Ping the QEMU Guest Agent of a running domain. |
 +---------------------------------------------------------+------------------------------------------------+
-| guest-run                                               | Run a program in the running domain.           |
+| :doc:`guest-run <virtomate-guest-run>`                  | Run a program in the running domain.           |
 +---------------------------------------------------------+------------------------------------------------+
 | pool-list                                               | List all storage pools.                        |
 +---------------------------------------------------------+------------------------------------------------+
@@ -87,6 +87,8 @@ Details about the error statuses:
 
 2
    Indicates an usage error; usage information will be printed to standard error.
+
+Subcommands may exit with additional statuses.
 
 Environment
 -----------

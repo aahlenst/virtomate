@@ -65,11 +65,18 @@ _GuestExecStatus = TypedDict(
 
 class RunResult(TypedDict):
     exit_code: int | None
+    """Exit code of the program if it was terminated normally."""
     signal: int | None
+    """Signal number (Unix-like operating systems) or unhandled exception code (Windows) if the program was terminated
+    abnormally."""
     stdout: str | None
+    """Captured standard output of the program."""
     stderr: str | None
+    """Captured standard error of the program."""
     stdout_truncated: bool
+    """Whether standard output was truncated."""
     stderr_truncated: bool
+    """Whether standard error was truncated."""
 
 
 def run_in_guest(

@@ -8,3 +8,5 @@ Man Pages
    virtomate-domain-list
    virtomate-domain-clone
    virtomate-domain-iface-list
+   virtomate-guest-ping
+   virtomate-guest-run
