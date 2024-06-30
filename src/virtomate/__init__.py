@@ -116,7 +116,10 @@ def _ping_guest(args: argparse.Namespace) -> int:
         if guest.ping_guest(conn, args.domain):
             return 0
         else:
-            return 1
+            # Why 125? See https://unix.stackexchange.com/a/418802/610434 for why the range of usable exit codes is
+            # [0,125]. We assign exit codes for specific errors like this one ("Agent unreachable") by starting at the
+            # upper end of the range and count down from there.
+            return 125
 
 
 def _run_in_guest(args: argparse.Namespace) -> int:

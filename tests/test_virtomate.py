@@ -688,7 +688,7 @@ class TestGuestPing:
     def test_error_when_domain_off(self, simple_bios_vm: str) -> None:
         cmd = ["virtomate", "guest-ping", simple_bios_vm]
         result = subprocess.run(cmd, capture_output=True, text=True)
-        assert result.returncode == 1, "guest-ping succeeded unexpectedly"
+        assert result.returncode == 125, "guest-ping succeeded unexpectedly"
         # No error because the return code already indicates that the guest could not be reached.
         assert result.stdout == ""
         assert result.stderr == ""
