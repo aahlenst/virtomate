@@ -3,13 +3,13 @@
 Getting Started
 ===============
 
-Once you have :doc:`installed <installation>` Virtomate, you can see all commands and options by running
+Once you have :doc:`installed <installation>` Virtomate, you can see all commands and options by running:
 
 .. code-block::
 
     $ virtomate --help
 
-To list all domains on your system, run
+To list all domains on your system, run:
 
 .. code-block::
 

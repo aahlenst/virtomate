@@ -3,7 +3,7 @@
 Virtomate
 =========
 
-Virtomate is a handy command-line application for managing virtual machines with `libvirt <https://libvirt.org/>`_. It runs on any Unix-like system with Python 3.10 and libvirt 9.0 (or newer) installed.
+Virtomate is a handy command-line application for automating virtual machines with `libvirt <https://libvirt.org/>`_. It features a scripting-friendly interface with JSON output. Furthermore, it reduces complex tasks like cloning virtual machines or importing volumes to a single step. Virtomate runs on any Unix-like system with Python 3.10 and libvirt 9.0 (or newer) installed.
 
 **PyPI package name**: :pypi:`virtomate`
 

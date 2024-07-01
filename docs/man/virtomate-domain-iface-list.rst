@@ -59,11 +59,11 @@ Added in version 0.1.0.
 Examples
 --------
 
-List all network interfaces of the domain *ubuntu-24.04* as as they are known to libvirt's built-in DHCP server:
+List all network interfaces of the domain *my-domain* as as they are known to libvirt's built-in DHCP server:
 
 .. code-block::
 
-   $ virtomate -p domain-iface-list ubuntu-24.04
+   $ virtomate -p domain-iface-list my-domain
    [
      {
        "addresses": [
@@ -78,11 +78,11 @@ List all network interfaces of the domain *ubuntu-24.04* as as they are known to
      }
    ]
 
-List all network interfaces of the domain *ubuntu-24.04* as as they are known to the QEMU Guest Agent installed on the guest:
+List all network interfaces of the domain *my-domain* as as they are known to the QEMU Guest Agent installed on the guest:
 
 .. code-block::
 
-   $ virtomate -p domain-iface-list --source agent ubuntu-24.04
+   $ virtomate -p domain-iface-list --source agent my-domain
    [
      {
        "addresses": [
@@ -129,11 +129,11 @@ List all network interfaces of the domain *ubuntu-24.04* as as they are known to
      }
    ]
 
-List all network interfaces of the domain *ubuntu-24.04* as as they are known to the host's ARP cache:
+List all network interfaces of the domain *my-domain* as as they are known to the host's ARP cache:
 
 .. code-block::
 
-   $ virtomate -p domain-iface-list --source arp ubuntu-24.04
+   $ virtomate -p domain-iface-list --source arp my-domain
    [
      {
        "addresses": [

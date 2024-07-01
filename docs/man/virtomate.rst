@@ -14,17 +14,18 @@ Synopsis
 Description
 -----------
 
-:program:`virtomate` is a command line utility to automate virtual machines with libvirt. In contrast to :manpage:`virsh(1)` it returns JSON to be processed by other tools. Furthermore, it provides advanced commands to clone domains, run programs on domains, or import volumes. :program:`virtomate` is not meant as a replacement for :manpage:`virsh(1)` but to complement it.
+:program:`virtomate` is a command line utility to automate virtual machines with libvirt. In contrast to :manpage:`virsh(1)`, it returns JSON to be processed by other tools. Furthermore, it provides advanced commands to clone domains, run programs on domains, or import volumes. :program:`virtomate` is not meant to replace :manpage:`virsh(1)` but to complement it.
 
-:program:`virtomate` uses libvirt. As such, it can manage virtual machines on the same computer it is running on as well on remote hosts. See the option ``-c`` for further information.
+:program:`virtomate` uses libvirt. As such, it can manage virtual machines on the same computer it is running on as on remote hosts. See the option ``-c`` for further information.
 
 No matter whether a :program:`virtomate` command succeeds or fails, :program:`virtomate` prints JSON to standard output (stdout), if any. Standard error (stderr) is reserved for diagnostic output. To distinguish between a standard and error response, examine the exit status of :program:`virtomate`.
 
 * A status of **0** indicates success. This means that you can expect a standard response.
-* A status of **1** indicates a :program:`virtomate` error and a standardised error message with the following structure will be printed to standard output:
+* A status of **1** indicates a Virtomate error. An error message with the following structure will be printed to standard output:
 
    .. autoclass:: virtomate.ErrorMessage
       :members:
+
 * A status of **2** indicates a usage error. Usage information will be printed to standard error.
 
 Options
@@ -42,7 +43,7 @@ Options
 
 .. option:: -l LEVEL, --log LEVEL
 
-   Enable logging to ``stderr`` and log all messages of ``LEVEL`` and above. Valid options are: ``debug``, ``info``, ``warning``, ``error``, ``critical``.
+   Enable logging to standard error and log all messages of ``LEVEL`` and above. Valid options are: ``debug``, ``info``, ``warning``, ``error``, and ``critical``.
 
 .. option:: -p, --pretty
 
@@ -66,7 +67,7 @@ Commands
 +---------------------------------------------------------+------------------------------------------------+
 | :doc:`guest-ping <virtomate-guest-ping>`                | Ping the QEMU Guest Agent of a running domain. |
 +---------------------------------------------------------+------------------------------------------------+
-| :doc:`guest-run <virtomate-guest-run>`                  | Run a program in the running domain.           |
+| :doc:`guest-run <virtomate-guest-run>`                  | Run a program on the running domain.           |
 +---------------------------------------------------------+------------------------------------------------+
 | :doc:`pool-list <virtomate-pool-list>`                  | List all storage pools.                        |
 +---------------------------------------------------------+------------------------------------------------+
@@ -86,7 +87,7 @@ Details about the error statuses:
    Indicates an operation error; a JSON error message will be printed to standard output.
 
 2
-   Indicates an usage error; usage information will be printed to standard error.
+   Indicates a usage error; usage information will be printed to standard error.
 
 Subcommands may exit with additional statuses.
 

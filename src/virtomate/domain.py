@@ -52,7 +52,7 @@ class AddressDescriptor(TypedDict):
     prefix: int
     """Prefix length (netmask) of the address"""
     type: str
-    """Human-readable type of the address (either `IPv4` or `IPv6`)"""
+    """Human-readable type of the address (either ``IPv4`` or ``IPv6``)"""
 
 
 class InterfaceDescriptor(TypedDict):

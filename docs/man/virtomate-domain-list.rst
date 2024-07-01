@@ -15,7 +15,7 @@ Description
 -----------
 :program:`virtomate domain-list` lists *all* domains.
 
-The returned JSON message has the following structure:
+The returned JSON message is a list of :class:`virtomate.domain.DomainDescriptor`:
 
 .. autoclass:: virtomate.domain.DomainDescriptor
    :members:

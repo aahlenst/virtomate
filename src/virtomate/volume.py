@@ -22,7 +22,7 @@ class TargetDescriptor(TypedDict):
     """Descriptor of the target ("physical manifestation") of a storage volume."""
 
     path: str
-    """Path of the storage volume."""
+    """Path of the storage volume"""
     format_type: str | None
     """Disk format of the storage volume, for example, ``qcow2``."""
 
@@ -31,7 +31,7 @@ class BackingStoreDescriptor(TypedDict):
     """Descriptor of the backing store of a storage volume."""
 
     path: str | None
-    """Path of the backing store."""
+    """Path of the backing store"""
     format_type: str | None
     """Disk format of the backing storage, for example, ``raw``."""
 
@@ -40,7 +40,7 @@ class VolumeDescriptor(TypedDict):
     """Descriptor of a libvirt storage volume."""
 
     name: str
-    """Name of the storage volume."""
+    """Name of the storage volume"""
     key: str
     """Key that identifies this storage volume."""
     capacity: int | None
@@ -50,7 +50,7 @@ class VolumeDescriptor(TypedDict):
     physical: int | None
     """How much physical space the volume currently occupies, expressed in bytes."""
     type: str | None
-    """Type of storage volume."""
+    """Type of storage volume"""
     target: TargetDescriptor
     """Target descriptor of the storage volume."""
     backing_store: BackingStoreDescriptor | None

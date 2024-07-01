@@ -19,9 +19,9 @@ class PoolDescriptor(TypedDict):
     """Descriptor of a libvirt storage pool."""
 
     name: str
-    """Name of the storage pool."""
+    """Name of the storage pool"""
     uuid: str
-    """UUID of the storage pool."""
+    """UUID of the storage pool"""
     state: str
     """Current state of the storage pool. Possible values: ``inactive``, ``building``, ``running``, ``degraded``,
     ``inaccessible``."""

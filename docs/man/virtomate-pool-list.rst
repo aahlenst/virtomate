@@ -15,7 +15,7 @@ Description
 -----------
 :program:`virtomate pool-list` lists *all* storage pools.
 
-The returned JSON message has the following structure:
+The returned JSON message is a list of :class:`virtomate.pool.PoolDescriptor`:
 
 .. autoclass:: virtomate.pool.PoolDescriptor
    :members:

@@ -15,7 +15,7 @@ Description
 -----------
 :program:`virtomate volume-list` lists *all* volumes in the storage pool named *pool*.
 
-The returned JSON message has the following structure:
+The returned JSON message is a list of :class:`virtomate.volume.VolumeDescriptor`:
 
 .. autoclass:: virtomate.volume.VolumeDescriptor
    :members:
