@@ -19,24 +19,42 @@ logger = logging.getLogger(__name__)
 
 
 class TargetDescriptor(TypedDict):
+    """Descriptor of the target ("physical manifestation") of a storage volume."""
+
     path: str
+    """Path of the storage volume."""
     format_type: str | None
+    """Disk format of the storage volume, for example, ``qcow2``."""
 
 
 class BackingStoreDescriptor(TypedDict):
+    """Descriptor of the backing store of a storage volume."""
+
     path: str | None
+    """Path of the backing store."""
     format_type: str | None
+    """Disk format of the backing storage, for example, ``raw``."""
 
 
 class VolumeDescriptor(TypedDict):
+    """Descriptor of a libvirt storage volume."""
+
     name: str
+    """Name of the storage volume."""
     key: str
+    """Key that identifies this storage volume."""
     capacity: int | None
+    """Total capacity of the storage volume in bytes."""
     allocation: int | None
+    """How much of the capacity of the storage volume is already being used, expressed in bytes."""
     physical: int | None
+    """How much physical space the volume currently occupies, expressed in bytes."""
     type: str | None
+    """Type of storage volume."""
     target: TargetDescriptor
+    """Target descriptor of the storage volume."""
     backing_store: BackingStoreDescriptor | None
+    """Descriptor of the backing store of this storage volume, if any."""
 
 
 def list_volumes(conn: virConnect, pool_name: str) -> Iterable[VolumeDescriptor]:

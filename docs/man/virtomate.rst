@@ -68,11 +68,11 @@ Commands
 +---------------------------------------------------------+------------------------------------------------+
 | :doc:`guest-run <virtomate-guest-run>`                  | Run a program in the running domain.           |
 +---------------------------------------------------------+------------------------------------------------+
-| pool-list                                               | List all storage pools.                        |
+| :doc:`pool-list <virtomate-pool-list>`                  | List all storage pools.                        |
 +---------------------------------------------------------+------------------------------------------------+
-| volume-list                                             | List all storage volumes.                      |
+| :doc:`volume-list <virtomate-volume-list>`              | List all storage volumes.                      |
 +---------------------------------------------------------+------------------------------------------------+
-| volume-import                                           | Import a local file into a storage pool.       |
+| :doc:`volume-import <virtomate-volume-import>`          | Import a local file into a storage pool.       |
 +---------------------------------------------------------+------------------------------------------------+
 
 Exit Status

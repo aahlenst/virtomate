@@ -10,3 +10,6 @@ Man Pages
    virtomate-domain-iface-list
    virtomate-guest-ping
    virtomate-guest-run
+   virtomate-pool-list
+   virtomate-volume-list
+   virtomate-volume-import

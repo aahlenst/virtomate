@@ -16,15 +16,27 @@ STATE_MAPPINGS: dict[int, str] = {
 
 
 class PoolDescriptor(TypedDict):
+    """Descriptor of a libvirt storage pool."""
+
     name: str
+    """Name of the storage pool."""
     uuid: str
+    """UUID of the storage pool."""
     state: str
+    """Current state of the storage pool. Possible values: ``inactive``, ``building``, ``running``, ``degraded``,
+    ``inaccessible``."""
     active: bool
+    """Whether the storage pool is currently active."""
     persistent: bool
+    """Whether the storage pool is persistent (``True``) or transient (``False``)."""
     capacity: int
+    """Total capacity of the storage pool in bytes."""
     allocation: int
+    """How much space (in bytes) has been allocated to storage volumes."""
     available: int
+    """How much free space (in bytes) there is left in the storage pool."""
     number_of_volumes: int | None
+    """Number of volumes in the storage pool. This value is only populated if the storage pool is running."""
 
 
 def list_pools(conn: virConnect) -> Sequence[PoolDescriptor]:
