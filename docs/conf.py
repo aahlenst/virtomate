@@ -28,4 +28,4 @@ manpages_url = "https://manpages.debian.org/{path}"
 
 html_theme = "furo"
 html_static_path = ["_static"]
-html_title = "Virtomate documentation"
+html_title = "Virtomate"
