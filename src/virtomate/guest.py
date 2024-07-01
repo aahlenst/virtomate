@@ -4,6 +4,7 @@ import sys
 import time
 from base64 import b64decode, b64encode
 from collections.abc import Sequence
+from datetime import datetime, timedelta
 from typing import TypedDict
 
 import libvirt
@@ -15,12 +16,13 @@ from virtomate.error import NotFoundError, IllegalStateError
 logger = logging.getLogger(__name__)
 
 
-def ping_guest(conn: virConnect, domain_name: str) -> bool:
+def ping_guest(conn: virConnect, domain_name: str, wait: float = 0) -> bool:
     """Ping the QEMU Guest Agent of a domain. Return ``True`` if the QEMU Guest Agent responded, ``False`` otherwise.
 
     Args:
         conn: libvirt connection
         domain_name: Name of the domain to ping
+        wait: For how many seconds to wait for the QEMU Guest Agent to respond
 
     Returns:
         ``True`` if the QEMU Guest Agent responded, ``False`` otherwise.
@@ -39,13 +41,23 @@ def ping_guest(conn: virConnect, domain_name: str) -> bool:
 
     cmd = {"execute": "guest-ping"}
     json_cmd = json.dumps(cmd)
-    try:
-        libvirt_qemu.qemuAgentCommand(
-            domain, json_cmd, libvirt_qemu.VIR_DOMAIN_QEMU_AGENT_COMMAND_DEFAULT, 0
-        )
-        return True
-    except libvirt.libvirtError:
-        return False
+
+    attempt = 0
+    end = datetime.now() + timedelta(seconds=wait)
+    while True:  # We want to send at least one ping and Python has no do...while.
+        attempt += 1
+        try:
+            libvirt_qemu.qemuAgentCommand(domain, json_cmd, 30, 0)
+            logger.debug("Attempt %d to ping %s succeeded", attempt, domain_name)
+            return True
+        except libvirt.libvirtError as ex:
+            logger.debug(
+                "Attempt %d to ping %s failed", attempt, domain_name, exc_info=ex
+            )
+            time.sleep(0.5)
+
+        if datetime.now() >= end:
+            return False
 
 
 _GuestExecStatus = TypedDict(

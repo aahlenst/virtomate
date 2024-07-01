@@ -10,7 +10,7 @@ from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
 import pytest
-from tenacity import stop_after_attempt, wait_fixed, retry
+from tenacity import wait_fixed, retry, Retrying, stop_after_delay
 import importlib.metadata
 from tests.matchers import ANY_STR, ANY_INT
 from virtomate.domain import DomainDescriptor
@@ -33,15 +33,21 @@ pytestmark = [
     ),
 ]
 
+BOOT_TIMEOUT = 60
+"""For how many seconds to wait for a guest to boot."""
 
-@retry(stop=stop_after_attempt(30), wait=wait_fixed(1))
+NETWORK_TIMEOUT = 30
+"""For how many seconds to wait for a guest to become online."""
+
+
+@retry(stop=stop_after_delay(BOOT_TIMEOUT), wait=wait_fixed(1))
 def wait_until_running(domain: str) -> None:
     """Waits until the QEMU Guest Agent of the given domain becomes responsive."""
     args = ["virtomate", "guest-ping", domain]
     subprocess.run(args, check=True)
 
 
-@retry(stop=stop_after_attempt(30), wait=wait_fixed(1))
+@retry(stop=stop_after_delay(NETWORK_TIMEOUT), wait=wait_fixed(1))
 def wait_for_network(domain: str) -> None:
     """Waits until the given domain is connected a network."""
     # Use ARP because this is the method that takes the longest for changes to become visible.
@@ -693,14 +699,27 @@ class TestGuestPing:
         assert result.stdout == ""
         assert result.stderr == ""
 
-    def test_guest_ping(self, running_vm_for_class: str) -> None:
-        wait_until_running(running_vm_for_class)
+    def test_guest_ping(self, simple_bios_vm: str) -> None:
+        start_domain(simple_bios_vm)
 
-        cmd = ["virtomate", "guest-ping", running_vm_for_class]
-        result = subprocess.run(cmd, capture_output=True)
-        assert result.returncode == 0, "Could not ping {}".format(running_vm_for_class)
-        assert result.stdout == b""
-        assert result.stderr == b""
+        for attempt in Retrying(stop=stop_after_delay(BOOT_TIMEOUT)):
+            with attempt:
+                cmd = ["virtomate", "guest-ping", simple_bios_vm]
+                result = subprocess.run(cmd, capture_output=True, check=True, text=True)
+
+        assert result.returncode == 0, "Could not ping {}".format(simple_bios_vm)
+        assert result.stdout == ""
+        assert result.stderr == ""
+
+    def test_wait_for_guest_ping_success(self, simple_bios_vm: str) -> None:
+        start_domain(simple_bios_vm)
+
+        cmd = ["virtomate", "guest-ping", "--wait", str(BOOT_TIMEOUT), simple_bios_vm]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+
+        assert result.returncode == 0, "Agent did not respond within timeout"
+        assert result.stdout == ""
+        assert result.stderr == ""
 
 
 class TestPoolList:

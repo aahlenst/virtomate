@@ -113,7 +113,7 @@ def _list_domain_interfaces(args: argparse.Namespace) -> int:
 
 def _ping_guest(args: argparse.Namespace) -> int:
     with connect(args.connection) as conn:
-        if guest.ping_guest(conn, args.domain):
+        if guest.ping_guest(conn, args.domain, wait=args.wait):
             return 0
         else:
             # Why 125? See https://unix.stackexchange.com/a/418802/610434 for why the range of usable exit codes is
@@ -277,6 +277,13 @@ def main() -> int:
         "domain",
         type=str,
         help="name of the domain to ping",
+    )
+    p_guest_ping.add_argument(
+        "--wait",
+        type=float,
+        default=0,
+        metavar="N",
+        help="wait for N seconds for the QEMU Guest Agent to respond (default: %(default)s)",
     )
     p_guest_ping.set_defaults(func=_ping_guest)
 

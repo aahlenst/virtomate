@@ -24,6 +24,10 @@ Options
 
    Display usage summary of this command and exit.
 
+.. option:: --wait N
+
+   Wait for *N* seconds for the QEMU Guest Agent to respond. The default is not to wait. Fractional seconds are supported, for example, ``0.5``.
+
 Exit Status
 -----------
 
@@ -65,3 +69,11 @@ Print "my-domain is reachable" when the QEMU Guest Agent is reachable, print "my
    exit $ret
 
 This example preserves the exit code of :code:`virtomate guest-ping my-domain` as well the original error messages.
+
+Wait at most 60 seconds for the QEMU Guest Agent on *my-domain* to respond:
+
+.. code-block::
+
+   $ virtomate guest-ping --wait 60 my-domain
+   $ echo $?
+   0
