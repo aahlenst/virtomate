@@ -13,7 +13,7 @@ Synopsis
 
 Description
 -----------
-:program:`virtomate guest-ping` tries to ping the QEMU Guest Agent running in *domain*. It exits with status 0 if the QEMU Guest Agent responded. If the QEMU Guest Agent did not respond, it exits with status 125.
+:program:`virtomate guest-ping` tries to ping the QEMU Guest Agent running on *domain*. It exits with status 0 if the QEMU Guest Agent responded. If the QEMU Guest Agent did not respond, it exits with status 125.
 
 Options
 -------
@@ -68,7 +68,7 @@ Print "my-domain is reachable" when the QEMU Guest Agent is reachable, print "my
    esac
    exit $ret
 
-This example preserves the exit code of :code:`virtomate guest-ping my-domain` as well the original error messages.
+This example preserves the exit code of :code:`virtomate guest-ping my-domain` as well as the original error messages.
 
 Wait at most 60 seconds for the QEMU Guest Agent on *my-domain* to respond:
 
