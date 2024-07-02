@@ -29,7 +29,6 @@ jobs:
       - name: Install dependencies
         run: |
           rye sync --no-lock
-          source .venv/bin/activate
 
       - name: Check formatting
         run: |
@@ -56,6 +55,27 @@ jobs:
         with:
           name: dist
           path: dist/
+          if-no-files-found: error
+
+      - name: Check the documentation
+        run: |
+          source .venv/bin/activate
+          pushd docs
+          sphinx-lint
+          popd
+
+      - name: Build documentation
+        run: |
+          source .venv/bin/activate
+          pushd docs
+          make -e SPHINXOPTS="--fail-on-warning --keep-going" html
+          popd
+
+      - name: Upload HTML documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-html
+          path: docs/_build/html
           if-no-files-found: error
 
   check:
