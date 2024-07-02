@@ -70,7 +70,7 @@ def list_volumes(conn: virConnect, pool_name: str) -> Iterable[VolumeDescriptor]
     """
 
     if not pool_exists(conn, pool_name):
-        raise NotFoundError("Pool '%(pool)s' does not exist" % {"pool": pool_name})
+        raise NotFoundError(f"Pool '{pool_name}' does not exist")
 
     volumes = []
     pool = conn.storagePoolLookupByName(pool_name)
@@ -186,15 +186,13 @@ def import_volume(
        https://www.qemu.org/docs/master/tools/qemu-img.html
     """
     if not os.path.exists(file):
-        raise FileNotFoundError("File '%(file)s' does not exist" % {"file": file})
+        raise FileNotFoundError(f"File '{file}' does not exist")
 
     if not os.path.isfile(file):
-        raise ValueError(
-            "Cannot import '%(file)s' because it is not a file" % {"file": file}
-        )
+        raise ValueError(f"Cannot import '{file}' because it is not a file")
 
     if not pool_exists(conn, pool_name):
-        raise NotFoundError("Pool '%(pool)s' does not exist" % {"pool": pool_name})
+        raise NotFoundError(f"Pool '{pool_name}' does not exist")
 
     if new_name is not None:
         volume_name = new_name
@@ -202,22 +200,18 @@ def import_volume(
         volume_name = os.path.basename(file)
 
     if volume_exists(conn, pool_name, volume_name):
-        raise Conflict(
-            "Volume '%(volume)s' already exists in pool '%(pool)s'"
-            % {"pool": pool_name, "volume": volume_name}
-        )
+        raise Conflict(f"Volume '{volume_name}' already exists in pool '{pool_name}'")
 
     cmd = ["qemu-img", "info", "--output=json", file]
     try:
         result = subprocess.run(cmd, capture_output=True, check=True, text=True)
     except BaseException as ex:
-        raise ProgramError("Failed to examine file '%(file)s'" % {"file": file}) from ex
+        raise ProgramError(f"Failed to examine file '{file}'") from ex
 
     volume_info = json.loads(result.stdout)
-    assert "format" in volume_info, (
-        "qemu-img did not report the format of the file '%(file)s' to import"
-        % {"file": file}
-    )
+    assert (
+        "format" in volume_info
+    ), f"qemu-img did not report the format of the file '{file}' to import"
 
     volume_tag = ElementTree.Element("volume")
     name_tag = ElementTree.SubElement(volume_tag, "name")

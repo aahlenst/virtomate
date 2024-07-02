@@ -144,9 +144,7 @@ def list_domain_interfaces(
     try:
         domain = conn.lookupByName(domain_name)
     except libvirt.libvirtError as ex:
-        raise NotFoundError(
-            "Domain '%(domain)s' does not exist" % {"domain": domain_name}
-        ) from ex
+        raise NotFoundError(f"Domain '{domain_name}' does not exist") from ex
 
     match source:
         case AddressSource.LEASE:
@@ -156,12 +154,10 @@ def list_domain_interfaces(
         case AddressSource.ARP:
             s = libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP
         case _:
-            raise AssertionError("Unknown address source: {}".format(source))
+            raise AssertionError(f"Unknown address source: {source}")
 
     if not domain_in_state(conn, domain_name, libvirt.VIR_DOMAIN_RUNNING):
-        raise IllegalStateError(
-            "Domain '%(domain)s' is not running" % {"domain": domain_name}
-        )
+        raise IllegalStateError(f"Domain '{domain_name}' is not running")
 
     interfaces = domain.interfaceAddresses(s, 0)
 
@@ -217,16 +213,14 @@ def clone_domain(
         libvirt.libvirtError: if a libvirt operation fails
     """
     if not domain_exists(conn, name):
-        raise NotFoundError("Domain '%(domain)s' does not exist" % {"domain": name})
+        raise NotFoundError(f"Domain '{name}' does not exist")
 
     if domain_exists(conn, new_name):
-        raise Conflict("Domain '%(domain)s' exists already" % {"domain": new_name})
+        raise Conflict(f"Domain '{new_name}' exists already")
 
     # Only domains that are shut off can be cloned.
     if not domain_in_state(conn, name, libvirt.VIR_DOMAIN_SHUTOFF):
-        raise IllegalStateError(
-            "Domain '%(domain)s' must be shut off to be cloned" % {"domain": name}
-        )
+        raise IllegalStateError(f"Domain '{name}' must be shut off to be cloned")
 
     domain_to_clone = conn.lookupByName(name)
     domain_xml = domain_to_clone.XMLDesc()
@@ -274,9 +268,7 @@ def domain_in_state(conn: virConnect, name: str, state: int) -> bool:
     try:
         domain = conn.lookupByName(name)
     except libvirt.libvirtError as ex:
-        raise NotFoundError(
-            "Domain '%(domain)s' does not exist" % {"domain": name}
-        ) from ex
+        raise NotFoundError(f"Domain '{name}' does not exist") from ex
 
     try:
         (domain_state, _) = domain.state(0)
@@ -305,14 +297,16 @@ class LibvirtMACFactory(MACFactory):
         if not re.match(
             "^([a-f0-9]{2}:){5}[a-f0-9]{2}$", mac_address, flags=re.IGNORECASE
         ):
-            raise ValueError("Invalid MAC address: {}".format(mac_address))
+            raise ValueError(f"Invalid MAC address: {mac_address}")
 
         # 100 attempts should be enough to find a free MAC address.
         for i in range(1, 101):
             self._attempts = i
 
             oui = mac_address[:8]
-            rnd_segments = ["%02x" % self._rnd.randint(0x00, 0xFF) for _ in range(0, 3)]
+            rnd_segments = [
+                format(self._rnd.randint(0x00, 0xFF), "02x") for _ in range(0, 3)
+            ]
             generated_mac = oui + ":" + ":".join(rnd_segments)
 
             if not self._mac_exists(generated_mac):

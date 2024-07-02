@@ -59,7 +59,7 @@ def wait_for_network(domain: str) -> None:
 def start_domain(name: str) -> None:
     cmd = ["virsh", "start", name]
     result = subprocess.run(cmd)
-    assert result.returncode == 0, "Could not start {}".format(name)
+    assert result.returncode == 0, f"Could not start {name}"
 
 
 def read_volume_xml(pool: str, volume: str) -> Element:
@@ -343,7 +343,7 @@ class TestDomainIfaceList:
         assert result.returncode == 1, "domain-iface-list succeeded unexpectedly"
         assert json.loads(result.stdout) == {
             "type": "IllegalStateError",
-            "message": "Domain '%s' is not running" % simple_bios_vm,
+            "message": f"Domain '{simple_bios_vm}' is not running",
         }
         assert result.stderr == ""
 
@@ -471,7 +471,7 @@ class TestDomainClone:
         assert result.returncode == 1, "domain-clone succeeded unexpectedly"
         assert json.loads(result.stdout) == {
             "type": "Conflict",
-            "message": "Domain '%s' exists already" % simple_bios_vm,
+            "message": f"Domain '{simple_bios_vm}' exists already",
         }
         assert result.stderr == ""
 
@@ -486,7 +486,7 @@ class TestDomainClone:
         assert result.returncode == 1, "domain-clone succeeded unexpectedly"
         assert json.loads(result.stdout) == {
             "type": "IllegalStateError",
-            "message": "Domain '%s' must be shut off to be cloned" % simple_bios_vm,
+            "message": f"Domain '{simple_bios_vm}' must be shut off to be cloned",
         }
         assert result.stderr == ""
 
@@ -665,8 +665,7 @@ class TestDomainClone:
         assert result.returncode == 1, "domain-clone succeeded unexpectedly"
         assert json.loads(result.stdout) == {
             "type": "libvirtError",
-            "message": "internal error: storage volume name '%s' already in use."
-            % clone_disk_name,
+            "message": f"internal error: storage volume name '{clone_disk_name}' already in use.",
         }
         assert result.stderr == ""
 
@@ -707,7 +706,7 @@ class TestGuestPing:
                 cmd = ["virtomate", "guest-ping", simple_bios_vm]
                 result = subprocess.run(cmd, capture_output=True, check=True, text=True)
 
-        assert result.returncode == 0, "Could not ping {}".format(simple_bios_vm)
+        assert result.returncode == 0, f"Could not ping {simple_bios_vm}"
         assert result.stdout == ""
         assert result.stderr == ""
 
@@ -762,7 +761,7 @@ class TestGuestRun:
         assert result.returncode == 1, "guest-run succeeded unexpectedly"
         assert json.loads(result.stdout) == {
             "type": "IllegalStateError",
-            "message": "Domain '%s' is not running" % simple_bios_vm,
+            "message": f"Domain '{simple_bios_vm}' is not running",
         }
         assert result.stderr == ""
 
@@ -1022,7 +1021,7 @@ class TestVolumeImport:
         assert result.returncode == 1
         assert json.loads(result.stdout) == {
             "type": "FileNotFoundError",
-            "message": "File '%s' does not exist" % volume_path,
+            "message": f"File '{volume_path}' does not exist",
         }
         assert result.stderr == ""
 
@@ -1047,7 +1046,7 @@ class TestVolumeImport:
         assert result.returncode == 1
         assert json.loads(result.stdout) == {
             "type": "ValueError",
-            "message": "Cannot import '%s' because it is not a file" % volume_path,
+            "message": f"Cannot import '{volume_path}' because it is not a file",
         }
         assert result.stderr == ""
 
@@ -1092,8 +1091,7 @@ class TestVolumeImport:
         assert result.returncode == 1
         assert json.loads(result.stdout) == {
             "type": "Conflict",
-            "message": "Volume '%(volume)s' already exists in pool '%(pool)s'"
-            % {"volume": volume_name, "pool": "default"},
+            "message": f"Volume '{volume_name}' already exists in pool 'default'",
         }
         assert result.stderr == ""
 

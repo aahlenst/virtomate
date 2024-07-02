@@ -86,7 +86,7 @@ def _clone_domain(args: argparse.Namespace) -> int:
             mode = CloneMode.REFLINK
         case _:
             # Argument choices not matching all CloneMode types is a programming error.
-            raise AssertionError("Unknown clone mode: {}".format(args.mode))
+            raise AssertionError(f"Unknown clone mode: {args.mode}")
 
     with connect(args.connection) as conn:
         domain.clone_domain(conn, args.domain, args.newname, mode)
@@ -103,7 +103,7 @@ def _list_domain_interfaces(args: argparse.Namespace) -> int:
             source = AddressSource.ARP
         case _:
             # Argument choices not matching all AddressSource types is a programming error.
-            raise AssertionError("Unknown address source: {}".format(args.source))
+            raise AssertionError(f"Unknown address source: {args.source}")
 
     with connect(args.connection) as conn:
         result = domain.list_domain_interfaces(conn, args.domain, source)
@@ -184,7 +184,7 @@ def _configure_logging(args: argparse.Namespace) -> None:
 
     numeric_level = getattr(logging, args.log.upper(), None)
     if not isinstance(numeric_level, int):
-        raise ValueError("Invalid log level '%(level)s'" % {"level": args.log})
+        raise ValueError(f"Invalid log level '{args.log}'")
 
     logging.basicConfig(level=numeric_level, force=True)
 

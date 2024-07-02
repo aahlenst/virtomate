@@ -35,9 +35,7 @@ def ping_guest(conn: virConnect, domain_name: str, wait: float = 0) -> bool:
     try:
         domain = conn.lookupByName(domain_name)
     except libvirt.libvirtError as ex:
-        raise NotFoundError(
-            "Domain '%(domain)s' does not exist" % {"domain": domain_name}
-        ) from ex
+        raise NotFoundError(f"Domain '{domain_name}' does not exist") from ex
 
     cmd = {"execute": "guest-ping"}
     json_cmd = json.dumps(cmd)
@@ -131,16 +129,12 @@ def run_in_guest(
     try:
         domain = conn.lookupByName(domain_name)
     except libvirt.libvirtError as ex:
-        raise NotFoundError(
-            "Domain '%(domain)s' does not exist" % {"domain": domain_name}
-        ) from ex
+        raise NotFoundError(f"Domain '{domain_name}' does not exist") from ex
 
     # Validate state instead of using domain_in_state to save a lookup.
     (domain_state, _) = domain.state(0)
     if domain_state != libvirt.VIR_DOMAIN_RUNNING:
-        raise IllegalStateError(
-            "Domain '%(domain)s' is not running" % {"domain": domain_name}
-        )
+        raise IllegalStateError(f"Domain '{domain_name}' is not running")
 
     pid = _guest_exec(domain, program, arguments, stdin=stdin)
     result = _wait_for_guest_exec(domain, pid)
