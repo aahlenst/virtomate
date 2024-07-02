@@ -208,22 +208,16 @@ jobs:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
 
     steps:
-      - name: Define DIST_HOME
-        run: |
-          echo "DIST_HOME=$(mktemp -d)" >> $GITHUB_ENV
-
       - name: Download artifacts produced by build job
         uses: actions/download-artifact@v4
         with:
           name: dist
-          path: "${{ env.DIST_HOME }}"
+          path: dist/
 
       - name: Publish release to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: "${{ env.DIST_HOME }}"
           print-hash: true
-
 
   github-release:
     name: Create GitHub Release
