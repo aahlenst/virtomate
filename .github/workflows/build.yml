@@ -242,11 +242,6 @@ jobs:
           name: dist
           path: "${{ env.DIST_HOME }}"
 
-      # gh-action-sigstore-python wants this. Otherwise, it complains that "This environment is externally managed".
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
       - name: Sign the artifacts with Sigstore
         uses: sigstore/gh-action-sigstore-python@v3.0.0
         with:
