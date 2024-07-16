@@ -15,7 +15,7 @@ Description
 -----------
 :program:`virtomate domain-clone` clones the existing domain named *domain* and names the duplicate *newname*.
 
-For cloning to succeed, the original domain named *domain* must be shut off before it can be cloned. Furthermore, all storage volumes to be cloned, including NVRAM flash devices, must be stored in a libvirt storage pool.
+For cloning to succeed, the domain to be cloned must be shut-off. Furthermore, all storage volumes to be cloned, including NVRAM flash devices, must be stored in a libvirt storage pool.
 
 Cloning is performed by duplicating all file-based storage volumes according to the option ``--mode``. All other storage volumes are left untouched, as are file-based storage volumes marked as read-only. NVRAM flash, which is typically used to load UEFI firmware, is always duplicated by creating a byte-for-byte copy, regardless of ``--mode``.
 
