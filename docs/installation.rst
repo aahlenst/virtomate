@@ -23,4 +23,4 @@ To install Virtomate with :program:`pipx`, run:
 
 .. code-block::
 
-    $ pipx install -U virtomate
+    $ pipx install virtomate
