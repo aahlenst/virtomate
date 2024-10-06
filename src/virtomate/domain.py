@@ -97,17 +97,23 @@ def list_domains(conn: virConnect) -> Sequence[DomainDescriptor]:
     domains = conn.listAllDomains()
     mapped_domains: list[DomainDescriptor] = []
     for domain in domains:
-        (state, _) = domain.state()
-        readable_state = "unknown"
-        if state in STATE_MAPPINGS:
-            readable_state = STATE_MAPPINGS[state]
+        # Concurrent operations might cause a domain to disappear after enumeration. Ignoring it is all we can do.
+        try:
+            (state, _) = domain.state()
 
-        mapped_domain: DomainDescriptor = {
-            "uuid": domain.UUIDString(),
-            "name": domain.name(),
-            "state": readable_state,
-        }
-        mapped_domains.append(mapped_domain)
+            readable_state = "unknown"
+            if state in STATE_MAPPINGS:
+                readable_state = STATE_MAPPINGS[state]
+
+            mapped_domain: DomainDescriptor = {
+                "uuid": domain.UUIDString(),
+                "name": domain.name(),
+                "state": readable_state,
+            }
+            mapped_domains.append(mapped_domain)
+        except libvirt.libvirtError as e:
+            logger.debug("Could not obtain properties of domain", exc_info=e)
+            continue
 
     # Sort to ensure stable order
     return sorted(mapped_domains, key=lambda m: m["uuid"])
@@ -326,7 +332,14 @@ class LibvirtMACFactory(MACFactory):
             # the ARP cache to prevent collisions with running machines on other hosts is not possible because libvirt
             # does not expose it. Asking `arp` does not work either because we might be connected to a remote host in a
             # different network.
-            domain_tag = ElementTree.fromstring(domain.XMLDesc(0))
+            #
+            # Concurrent operations might cause a domain to disappear after enumeration. Ignoring it is all we can do.
+            try:
+                domain_tag = ElementTree.fromstring(domain.XMLDesc(0))
+            except libvirt.libvirtError as e:
+                logger.debug("Could not obtain XML descriptor of domain", exc_info=e)
+                continue
+
             for mac_tag in domain_tag.findall("devices/interface/mac"):
                 if "address" not in mac_tag.attrib:
                     continue
@@ -368,8 +381,12 @@ class LibvirtUUIDFactory(UUIDFactory):
         `False` otherwise.
         """
         for domain in self._conn.listAllDomains(0):
-            if uuid4 == UUID(bytes=domain.UUID()):
-                return True
+            # Concurrent operations might cause a domain to disappear after enumeration. Ignoring it is all we can do.
+            try:
+                if uuid4 == UUID(bytes=domain.UUID()):
+                    return True
+            except libvirt.libvirtError as e:
+                logger.debug("Could not obtain UUID of domain", exc_info=e)
 
         return False
 

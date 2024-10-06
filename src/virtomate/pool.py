@@ -1,8 +1,11 @@
+import logging
 from collections.abc import Sequence
 from typing import TypedDict
 
 import libvirt
 from libvirt import virConnect
+
+logger = logging.getLogger(__name__)
 
 # Maps virStoragePoolState to a human-readable string.
 # https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolState
@@ -50,28 +53,34 @@ def list_pools(conn: virConnect) -> Sequence[PoolDescriptor]:
     """
     pools: list[PoolDescriptor] = []
     for pool in conn.listAllStoragePools():
-        (state, capacity, allocation, available) = pool.info()
+        # Concurrent operations might cause a pool to disappear after enumeration. Ignoring it is all we can do.
+        try:
+            (state, capacity, allocation, available) = pool.info()
 
-        readable_state = "unknown"
-        if state in STATE_MAPPINGS:
-            readable_state = STATE_MAPPINGS[state]
+            readable_state = "unknown"
+            if state in STATE_MAPPINGS:
+                readable_state = STATE_MAPPINGS[state]
 
-        number_of_volumes = None
-        if pool.isActive():
-            number_of_volumes = pool.numOfVolumes()
+            number_of_volumes = None
+            if pool.isActive():
+                number_of_volumes = pool.numOfVolumes()
 
-        pool_descriptor: PoolDescriptor = {
-            "name": pool.name(),
-            "uuid": pool.UUIDString(),
-            "state": readable_state,
-            "active": bool(pool.isActive()),
-            "persistent": bool(pool.isPersistent()),
-            "capacity": capacity,
-            "allocation": allocation,
-            "available": available,
-            "number_of_volumes": number_of_volumes,
-        }
-        pools.append(pool_descriptor)
+            pool_descriptor: PoolDescriptor = {
+                "name": pool.name(),
+                "uuid": pool.UUIDString(),
+                "state": readable_state,
+                "active": bool(pool.isActive()),
+                "persistent": bool(pool.isPersistent()),
+                "capacity": capacity,
+                "allocation": allocation,
+                "available": available,
+                "number_of_volumes": number_of_volumes,
+            }
+
+            pools.append(pool_descriptor)
+        except libvirt.libvirtError as e:
+            logger.debug("Could not obtain properties of pool", exc_info=e)
+            continue
 
     return pools
 

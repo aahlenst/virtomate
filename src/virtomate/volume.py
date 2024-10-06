@@ -79,31 +79,36 @@ def list_volumes(conn: virConnect, pool_name: str) -> Iterable[VolumeDescriptor]
     pool.refresh(0)
 
     for volume in pool.listAllVolumes(0):
-        # Schema: https://gitlab.com/libvirt/libvirt/-/blob/master/src/conf/schemas/storagevol.rng
-        volume_xml = volume.XMLDesc()
-        volume_tag = ElementTree.fromstring(volume_xml)
+        # Concurrent operations might cause a volume to disappear after enumeration. Ignoring it is all we can do.
+        try:
+            # Schema: https://gitlab.com/libvirt/libvirt/-/blob/master/src/conf/schemas/storagevol.rng
+            volume_xml = volume.XMLDesc()
+            volume_tag = ElementTree.fromstring(volume_xml)
 
-        # Attribute type is optional
-        volume_type = volume_tag.get("type")
+            # Attribute type is optional
+            volume_type = volume_tag.get("type")
 
-        # target/format is optional
-        format_type = None
-        target_format_tag = volume_tag.find("target/format")
-        if target_format_tag is not None:
-            format_type = target_format_tag.get("type")
+            # target/format is optional
+            format_type = None
+            target_format_tag = volume_tag.find("target/format")
+            if target_format_tag is not None:
+                format_type = target_format_tag.get("type")
 
-        volume_props: VolumeDescriptor = {
-            "name": volume.name(),
-            "key": volume.key(),
-            "capacity": _extract_sizing_element("capacity", volume_tag),
-            "allocation": _extract_sizing_element("allocation", volume_tag),
-            "physical": _extract_sizing_element("physical", volume_tag),
-            "type": volume_type,
-            "target": {"path": volume.path(), "format_type": format_type},
-            "backing_store": _extract_backing_store(volume_tag),
-        }
+            volume_props: VolumeDescriptor = {
+                "name": volume.name(),
+                "key": volume.key(),
+                "capacity": _extract_sizing_element("capacity", volume_tag),
+                "allocation": _extract_sizing_element("allocation", volume_tag),
+                "physical": _extract_sizing_element("physical", volume_tag),
+                "type": volume_type,
+                "target": {"path": volume.path(), "format_type": format_type},
+                "backing_store": _extract_backing_store(volume_tag),
+            }
 
-        volumes.append(volume_props)
+            volumes.append(volume_props)
+        except libvirt.libvirtError as e:
+            logger.debug("Could not obtain properties of volume", exc_info=e)
+            continue
 
     return sorted(volumes, key=lambda vol: vol["name"])
 

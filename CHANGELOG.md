@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing so far.
+### Fixed
+
+- Guard against crashes caused by removing libvirt objects that are unrelated to the currently running operation. The affected operations were `domain-list`, `domain-clone`, `pool-list`, and `volume-list`.
 
 ## [0.1.0] - 2024-07-02
 
