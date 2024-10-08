@@ -132,7 +132,7 @@ To run a shell command, you have to invoke the shell explicitly. For example, to
      "stdout_truncated": false
    }
 
-You can also print "Hello World" on the guest and count the characters in the guest by passing "Hello World" via standard input to :manpage:`wc(1)`:
+You can also print "Hello World" on the host and count the characters on the guest by passing "Hello World" via standard input to :manpage:`wc(1)`:
 
 .. code-block::
 
