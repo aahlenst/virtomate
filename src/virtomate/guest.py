@@ -214,7 +214,7 @@ def _wait_for_guest_exec(
     start = time.monotonic()
     while True:
         if (time.monotonic() - start) > timeout:
-            raise TimeoutError("Agent command did not complete in %u seconds" % timeout)
+            raise TimeoutError(f"Agent command did not complete in {timeout} seconds")
 
         cmd = {"execute": "guest-exec-status", "arguments": {"pid": pid}}
         cmd_json = json.dumps(cmd)
