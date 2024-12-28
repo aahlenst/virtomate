@@ -25,6 +25,8 @@ jobs:
 
       - name: Set up Rye
         uses: eifinger/setup-rye@v4
+        with:
+          version: "0.43.0"
 
       - name: Install dependencies
         run: |
