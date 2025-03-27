@@ -181,7 +181,7 @@ def import_volume(
 
     Raises:
         FileNotFoundError: if the file to import does not exist
-        ValueError: if the file to import is ot a file
+        ValueError: if the file to import is not a file
         virtomate.error.NotFoundError: if the pool does not exist
         virtomate.error.Conflict: if a volume with the same name already exists in the pool
         virtomate.error.ProgramError: if ``qemu-img`` cannot determine the format of the file to import
