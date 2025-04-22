@@ -22,7 +22,7 @@ Description
 
 The exit status of :program:`virtomate guest-run` is unaffected by the exit status of *program*. :program:`virtomate guest-run` will only exit with a non-zero status if it could not start *program*, for example, because it does not exist or the QEMU Guest Agent is not running.
 
-*program* is started by the QEMU Guest Agent using an :manpage:`exit(3)`-like function. This means no shell is involved when starting *program*. To use shell-builtins like ``|`` in your command to run on *domain*, you have to explicitly invoke a shell as *program*. Please see the examples below for how to do it.
+*program* is started by the QEMU Guest Agent using an :manpage:`exec(3)`-like function. This means no shell is involved when starting *program*. To use shell-builtins like ``|`` in your command to run on *domain*, you have to explicitly invoke a shell as *program*. Please see the examples below for how to do it.
 
 While you can pass standard input to *program* and receive standard output as well as standard error, note that those are completely buffered in memory before being transferred back and forth between the host and the guest. Consequently, it would be very inefficient to transfer larger volumes of data between the host and the guest. Furthermore, the amount of data that can be transferred between the host and the guest is limited to a few megabytes by libvirt.
 
