@@ -51,7 +51,9 @@ def wait_until_running(domain: str) -> None:
 def wait_for_network(domain: str) -> None:
     """Waits until the given domain is connected a network."""
     # Use ARP because this is the method that takes the longest for changes to become visible.
-    args = ["virtomate", "domain-iface-list", "--source", "arp", domain]
+    # TODO: Switch back to ARP once `virsh domifaddr --source arp` does no longer fail on GitHub Actions with
+    #  `error: internal error: wrong nlmsg len`.
+    args = ["virtomate", "domain-iface-list", "--source", "lease", domain]
     result = subprocess.run(args, check=True, capture_output=True)
     assert len(json.loads(result.stdout)) > 0
 
@@ -427,6 +429,9 @@ class TestDomainIfaceList:
             },
         ]
 
+    @pytest.mark.skipif(
+        "CI" in os.environ, reason="GitHub Actions has problems with ARP"
+    )
     def test_source_arp(self, running_vm_for_class: str) -> None:
         wait_until_running(running_vm_for_class)
         wait_for_network(running_vm_for_class)
