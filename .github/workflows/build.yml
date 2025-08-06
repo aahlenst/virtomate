@@ -104,7 +104,7 @@ jobs:
           echo "LIBVIRT_DEFAULT_URI=qemu:///system" >> $GITHUB_ENV
 
       - name: Download artifacts produced by build job
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: dist
           path: "${{ env.DIST_HOME }}"
@@ -211,7 +211,7 @@ jobs:
 
     steps:
       - name: Download artifacts produced by build job
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: dist
           path: dist/
@@ -239,7 +239,7 @@ jobs:
           echo "DIST_HOME=$(mktemp -d)" >> $GITHUB_ENV
 
       - name: Download artifacts produced by build job
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: dist
           path: "${{ env.DIST_HOME }}"
