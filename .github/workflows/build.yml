@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install required packages
         run: |
@@ -95,7 +95,7 @@ jobs:
       packages: read
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Define TEST_MACHINES_HOME, DIST_HOME, LIBVIRT_DEFAULT_URI
         run: |
@@ -232,7 +232,7 @@ jobs:
       id-token: write  # IMPORTANT: mandatory for sigstore
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Define DIST_HOME
         run: |
