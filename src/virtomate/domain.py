@@ -60,7 +60,7 @@ class InterfaceDescriptor(TypedDict):
 
     name: str
     """Human-readable name of the interface"""
-    hwaddr: str
+    hwaddr: str | None
     """MAC address of the interface"""
     addresses: Sequence[AddressDescriptor]
     """Addresses assigned to the interface"""
@@ -197,7 +197,7 @@ def list_domain_interfaces(
         result.append(interface)
 
     # Sort to ensure stable order
-    return sorted(result, key=lambda i: i["hwaddr"])
+    return sorted(result, key=lambda i: i["hwaddr"] or "")
 
 
 def clone_domain(
