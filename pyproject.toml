@@ -1,6 +1,6 @@
 [project]
 name = "virtomate"
-version = "0.1.1"
+version = "0.1.2"
 description = "A scripting-friendly tool to manage virtual machines with libvirt."
 authors = [
     { name = "Andreas Ahlenstorf", email = "andreas@ahlenstorf.ch" }
