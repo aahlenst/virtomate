@@ -53,7 +53,7 @@ jobs:
           rye build
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: dist
           path: dist/
@@ -74,7 +74,7 @@ jobs:
           popd
 
       - name: Upload HTML documentation
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: documentation-html
           path: docs/_build/html
@@ -104,7 +104,7 @@ jobs:
           echo "LIBVIRT_DEFAULT_URI=qemu:///system" >> $GITHUB_ENV
 
       - name: Download artifacts produced by build job
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: dist
           path: "${{ env.DIST_HOME }}"
@@ -190,7 +190,7 @@ jobs:
           sudo -E bash -c "source .venv/bin/activate && pytest --cov virtomate --cov-report html tests/ --functional"
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: "htmlcov-python-${{ matrix.python-version }}-libvirt-${{ matrix.libvirt-version }}"
           path: htmlcov/
@@ -211,7 +211,7 @@ jobs:
 
     steps:
       - name: Download artifacts produced by build job
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: dist
           path: dist/
@@ -239,7 +239,7 @@ jobs:
           echo "DIST_HOME=$(mktemp -d)" >> $GITHUB_ENV
 
       - name: Download artifacts produced by build job
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: dist
           path: "${{ env.DIST_HOME }}"
