@@ -245,7 +245,7 @@ jobs:
           path: "${{ env.DIST_HOME }}"
 
       - name: Sign the artifacts with Sigstore
-        uses: sigstore/gh-action-sigstore-python@v3.1.0
+        uses: sigstore/gh-action-sigstore-python@v3.2.0
         with:
           inputs: |
             "${{ env.DIST_HOME }}"/*.tar.gz
